@@ -35,9 +35,9 @@ class ContactPage extends StatelessWidget {
               const SizedBox(height: 32),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final cols = constraints.maxWidth < 600
+                  final cols = constraints.maxWidth < Breakpoints.mobile
                       ? 1
-                      : (constraints.maxWidth < 1000 ? 2 : 3);
+                      : (constraints.maxWidth < Breakpoints.desktop ? 2 : 3);
                   return GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),

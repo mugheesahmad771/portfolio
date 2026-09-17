@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/constants/app_color.dart';
+import 'package:portfolio/core/constants/breakpoints.dart';
 
 class ResponsiveLayout extends StatelessWidget {
   final Widget child;
@@ -17,8 +18,7 @@ class ResponsiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isMobile = screenSize.width < 600;
+    final isMobile = Breakpoints.isMobile(context);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -52,9 +52,8 @@ class ResponsiveContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isMobile = screenSize.width < 600;
-    final isTablet = screenSize.width >= 600 && screenSize.width < 1024;
+    final isMobile = Breakpoints.isMobile(context);
+    final isTablet = Breakpoints.isTablet(context);
 
     final containerPadding =
         padding ??
@@ -92,9 +91,8 @@ class ResponsiveGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isMobile = screenSize.width < 600;
-    final isTablet = screenSize.width >= 600 && screenSize.width < 1024;
+    final isMobile = Breakpoints.isMobile(context);
+    final isTablet = Breakpoints.isTablet(context);
 
     final crossAxisCount = isMobile
         ? mobileColumns ?? 1

@@ -336,7 +336,7 @@ class HomePage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 48),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 600;
+          final isMobile = constraints.maxWidth < Breakpoints.mobile;
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -434,23 +434,28 @@ class HomePage extends StatelessWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final cols = constraints.maxWidth < 700 ? 1 : 2;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: cols,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: viewModel.featuredProjects.length,
-                  itemBuilder: (context, index) {
-                    final project = viewModel.featuredProjects[index];
-                    return ScrollReveal(
-                      id: 'featured-project-${project.id}',
-                      child: ProjectCard(project: project),
-                    );
-                  },
+                // A fixed-aspect-ratio GridView forces every card to the
+                // same height regardless of how much title/description/chip
+                // content it holds — on a full-width mobile card that
+                // overflows. A Wrap of fixed-width cards lets each one size
+                // to its own content instead (same fix as skills_page.dart).
+                const spacing = 16.0;
+                final cardWidth =
+                    (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: viewModel.featuredProjects
+                      .map(
+                        (project) => SizedBox(
+                          width: cardWidth,
+                          child: ScrollReveal(
+                            id: 'featured-project-${project.id}',
+                            child: ProjectCard(project: project),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 );
               },
             ),

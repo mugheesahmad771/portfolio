@@ -48,9 +48,9 @@ class AboutPage extends StatelessWidget {
               const SizedBox(height: 24),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final cols = constraints.maxWidth < 600
+                  final cols = constraints.maxWidth < Breakpoints.mobile
                       ? 1
-                      : (constraints.maxWidth < 1000 ? 2 : 4);
+                      : (constraints.maxWidth < Breakpoints.desktop ? 2 : 4);
                   // A fixed-aspect-ratio GridView forced every card to the
                   // same tall height regardless of how much text it held,
                   // leaving most cards mostly empty space below their text.

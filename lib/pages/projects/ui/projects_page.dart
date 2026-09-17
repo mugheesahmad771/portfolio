@@ -166,21 +166,30 @@ class ProjectsPage extends StatelessWidget {
           message: 'No projects found',
         );
       }
-      return GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isMobile ? 1 : 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
-        ),
-        itemCount: viewModel.filteredProjects.length,
-        itemBuilder: (context, index) {
-          final project = viewModel.filteredProjects[index];
-          return ScrollReveal(
-            id: 'project-${project.id}',
-            child: ProjectCard(project: project),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final cols = isMobile ? 1 : 2;
+          // Fixed-aspect-ratio GridView forces every card to the same
+          // height regardless of its title/description/chip content — a
+          // Wrap of fixed-width cards lets each one size to its own
+          // content instead (same fix as skills_page.dart).
+          const spacing = 16.0;
+          final cardWidth =
+              (constraints.maxWidth - spacing * (cols - 1)) / cols;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: viewModel.filteredProjects
+                .map(
+                  (project) => SizedBox(
+                    width: cardWidth,
+                    child: ScrollReveal(
+                      id: 'project-${project.id}',
+                      child: ProjectCard(project: project),
+                    ),
+                  ),
+                )
+                .toList(),
           );
         },
       );

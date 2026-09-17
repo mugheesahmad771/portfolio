@@ -1,11 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-/// Canonical responsive breakpoints for the app.
-///
-/// This is the single source of truth for breakpoints. A later pass will
-/// replace the inconsistent hardcoded breakpoints currently scattered across
-/// `app_header.dart` (600), `app_navigation_bar.dart` (768), and
-/// `header.dart`/`app_footer.dart` (1024/1280) with these.
+/// Canonical responsive breakpoints for the app — the single source of
+/// truth. Every layout that branches on screen width should read from here
+/// rather than hardcoding its own pixel thresholds.
 class Breakpoints {
   Breakpoints._();
 

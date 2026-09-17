@@ -166,19 +166,24 @@ class ProjectDetailPage extends StatelessWidget {
                     final cols = constraints.maxWidth < 700
                         ? 1
                         : (constraints.maxWidth < 1100 ? 2 : 3);
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: cols,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1.1,
-                      ),
-                      itemCount: viewModel.relatedProjects.length,
-                      itemBuilder: (context, index) => ProjectCard(
-                        project: viewModel.relatedProjects[index],
-                      ),
+                    // Fixed-aspect-ratio GridView forces every card to the
+                    // same height regardless of its content — a Wrap of
+                    // fixed-width cards lets each one size to its own
+                    // content instead (same fix as skills_page.dart).
+                    const spacing = 16.0;
+                    final cardWidth =
+                        (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: viewModel.relatedProjects
+                          .map(
+                            (project) => SizedBox(
+                              width: cardWidth,
+                              child: ProjectCard(project: project),
+                            ),
+                          )
+                          .toList(),
                     );
                   },
                 ),
@@ -414,14 +419,21 @@ class ProjectDetailPage extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       itemCount: app.screenshots.length,
                       separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      itemBuilder: (context, i) => ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          app.screenshots[i],
-                          fit: BoxFit.cover,
-                          semanticLabel:
-                              '${app.label} ${app.platform} screenshot ${i + 1}',
-                          errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                      // A horizontal ListView child needs its own bounded
+                      // width — the outer SizedBox only constrains height,
+                      // so without this the image has nothing to size
+                      // itself against.
+                      itemBuilder: (context, i) => SizedBox(
+                        width: 160,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            app.screenshots[i],
+                            fit: BoxFit.cover,
+                            semanticLabel:
+                                '${app.label} ${app.platform} screenshot ${i + 1}',
+                            errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),
