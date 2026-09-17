@@ -177,27 +177,40 @@ class ProjectCard extends StatelessWidget {
               )
             else
               ProjectMediaFallback(project: project, compact: true),
-            Positioned(
-              top: 12,
-              left: 12,
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  if (project.featured)
-                    const AppBadge(
-                      label: 'Featured',
-                      showDot: false,
-                      backgroundColor: AppColors.orange,
-                    ),
-                  if (project.privateProject)
-                    const AppBadge(
-                      label: 'NDA',
-                      showDot: false,
-                      backgroundColor: AppColors.purple,
-                    ),
-                ],
+            if (project.featured || project.privateProject)
+              Positioned(
+                top: 12,
+                left: 12,
+                // AppBadge's own background is only 15%-alpha tinted —
+                // fine against the app's dark page background, but
+                // thumbnails vary (some have bright logo art in this exact
+                // corner), so without a backdrop the badges can read as
+                // nearly invisible or clash with whatever's underneath.
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.bg.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      if (project.featured)
+                        const AppBadge(
+                          label: 'Featured',
+                          showDot: false,
+                          backgroundColor: AppColors.orange,
+                        ),
+                      if (project.privateProject)
+                        const AppBadge(
+                          label: 'NDA',
+                          showDot: false,
+                          backgroundColor: AppColors.purple,
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
             if (project.videoUrl?.isNotEmpty ?? false)
               const Center(
                 child: _PlayBadge(),
