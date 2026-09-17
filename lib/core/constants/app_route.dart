@@ -1,6 +1,7 @@
 class AppRoute {
   // Public routes
   static const home = '/home';
+  static const about = '/about';
   static const projects = '/projects';
   static const projectDetail = '/projects/:slug';
   static const experience = '/experience';
@@ -10,6 +11,8 @@ class AppRoute {
 
   // Admin routes
   static const admin = '/admin';
-  static const adminNew = '/admin/new';
-  static const editProject = '/admin/edit/:id';
+  static const projectForm = '/admin/projects/form';
+  static const projectFormEdit = '/admin/projects/form/:id';
+  static const adminExperienceForm = '/admin/experience/form';
+  static const adminExperienceFormEdit = '/admin/experience/form/:id';
 }

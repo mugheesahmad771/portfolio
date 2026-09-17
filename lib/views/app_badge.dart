@@ -21,9 +21,7 @@ class AppBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: (backgroundColor ?? AppColors.green).withValues(alpha: 0.15),
-        border: Border.all(
-          color: backgroundColor ?? AppColors.green,
-        ),
+        border: Border.all(color: backgroundColor ?? AppColors.green),
         borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(

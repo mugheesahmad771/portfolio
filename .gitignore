@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Personal documents kept for local reference only, never for the public repo
+/private_docs/

@@ -1,35 +1,44 @@
 import 'package:get/get.dart';
+import 'package:portfolio/core/models/experience_model.dart';
+import 'package:portfolio/core/utils/resume_download.dart';
+import 'package:portfolio/pages/skills/viewmodel/skills_viewmodel.dart';
+import 'package:portfolio/services/experience_service.dart';
 
 class ResumeViewModel extends GetxController {
-  // Resume data
-  late Map<String, dynamic> resumeData;
+  final ExperienceService _experienceService = Get.find<ExperienceService>();
+
+  final Map<String, dynamic> resumeData = {
+    'contact': {
+      'email': 'mugheesahmad771@gmail.com',
+      'phone': '+92 318 6361580',
+      'location': 'Multan, Pakistan',
+      'website': 'github.com/mugheesahmad771',
+    },
+    'summary':
+        'Flutter Developer with 3+ years of professional experience building high-quality, cross-platform mobile applications for iOS and Android. Full-stack experience across React Native, Angular 18+ and C# ASP.NET Web API, with hands-on work in AI-powered features and intelligent automation.',
+  };
+
+  List<ExperienceModel> experiences = [];
+  final List<SkillGroup> skillGroups = kSkillGroups;
+  bool isLoading = true;
 
   @override
   void onInit() {
     super.onInit();
-    _loadResumeData();
+    _load();
   }
 
-  void _loadResumeData() {
-    resumeData = {
-      'contact': {
-        'email': 'mughees@example.com',
-        'phone': '+1 (234) 567-8900',
-        'location': 'San Francisco, CA',
-        'website': 'www.example.com',
-        'github': 'github.com/mugheesahmad771',
-      },
-      'summary':
-          'Full Stack Developer with 8+ years of experience building scalable applications. Specialized in Flutter, React, Node.js, and cloud technologies. Proven track record of delivering high-quality projects for startups and enterprises.',
-      'downloadUrl': '/assets/resume.pdf',
-    };
+  Future<void> _load() async {
+    isLoading = true;
+    update();
+    try {
+      experiences = await _experienceService.getAll();
+    } catch (_) {
+      // Keep the resume page usable even if the network call fails.
+    }
+    isLoading = false;
+    update();
   }
 
-  void downloadResume() {
-    // Implement download logic
-    Get.snackbar(
-      'Download',
-      'Resume download started...',
-    );
-  }
+  Future<void> downloadResume() => downloadResumePdf();
 }

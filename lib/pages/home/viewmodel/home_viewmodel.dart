@@ -4,16 +4,21 @@ import 'package:portfolio/core/models/profile_model.dart';
 import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/core/models/stats_model.dart';
 import 'package:portfolio/core/models/tech_stack_model.dart';
+import 'package:portfolio/services/experience_service.dart';
 import 'package:portfolio/services/project_service.dart';
 
 class HomeViewModel extends GetxController {
-  final ProjectService _projectService = ProjectService();
+  final ProjectService _projectService = Get.find<ProjectService>();
+  final ExperienceService _experienceService = Get.find<ExperienceService>();
 
-  late ProfileModel profile;
-  late List<ProjectModel> featuredProjects;
-  late List<StatsModel> stats;
-  late List<String> coreStack;
-  late List<ExperienceModel> experiences;
+  final ProfileModel profile = ProfileModel.demo();
+  final List<StatsModel> stats = StatsModel.all;
+  final List<String> coreStack = TechStack.coreStack;
+
+  List<ProjectModel> featuredProjects = [];
+  List<ExperienceModel> experiences = [];
+  bool isLoading = true;
+  bool hasError = false;
 
   @override
   void onInit() {
@@ -21,33 +26,30 @@ class HomeViewModel extends GetxController {
     _initializeData();
   }
 
-  void _initializeData() {
-    // Load profile
-    profile = ProfileModel.demo();
+  Future<void> retry() => _initializeData();
 
-    // Load featured projects
-    featuredProjects = _projectService.getFeatured();
-
-    // Load stats
-    stats = [
-      StatsModel(value: '50+', label: 'Projects Completed'),
-      StatsModel(value: '8+', label: 'Years Experience'),
-      StatsModel(value: '100%', label: 'Client Satisfaction'),
-      StatsModel(value: '15+', label: 'Technologies'),
-    ];
-
-    // Load tech stack
-    coreStack = TechStack.coreStack;
-
-    // Load experiences
-    experiences = [
-      ExperienceModel.demo(0),
-      ExperienceModel.demo(1),
-      ExperienceModel.demo(2),
-    ];
+  Future<void> _initializeData() async {
+    isLoading = true;
+    hasError = false;
+    update();
+    try {
+      final results = await Future.wait([
+        _projectService.getFeatured(),
+        _experienceService.getAll(),
+      ]);
+      featuredProjects = results[0] as List<ProjectModel>;
+      experiences = (results[1] as List<ExperienceModel>).take(3).toList();
+    } catch (_) {
+      // A real fetch failure is distinct from "nothing added yet" — the
+      // page shows a retry affordance rather than silently rendering an
+      // empty state that looks identical to "no content".
+      hasError = true;
+    }
+    isLoading = false;
+    update();
   }
 
-  List<ProjectModel> getAllProjects() {
+  Future<List<ProjectModel>> getAllProjects() {
     return _projectService.getAll();
   }
 }

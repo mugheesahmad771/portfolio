@@ -78,7 +78,8 @@ class AppTextField extends StatelessWidget {
             ),
           ),
           style: const TextStyle(color: AppColors.title),
-          validator: validator ??
+          validator:
+              validator ??
               (value) {
                 if (isRequired && (value?.isEmpty ?? true)) {
                   return 'This field is required';
@@ -118,10 +119,7 @@ class AppCheckbox extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.title,
-            ),
+            style: const TextStyle(fontSize: 14, color: AppColors.title),
           ),
         ],
       ),

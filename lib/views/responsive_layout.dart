@@ -28,9 +28,7 @@ class ResponsiveLayout extends StatelessWidget {
             child,
             if (showFooter)
               Container(
-                margin: EdgeInsets.only(
-                  top: isMobile ? 32 : 64,
-                ),
+                margin: EdgeInsets.only(top: isMobile ? 32 : 64),
                 child: const SizedBox(),
               ),
           ],
@@ -58,7 +56,8 @@ class ResponsiveContainer extends StatelessWidget {
     final isMobile = screenSize.width < 600;
     final isTablet = screenSize.width >= 600 && screenSize.width < 1024;
 
-    final containerPadding = padding ??
+    final containerPadding =
+        padding ??
         EdgeInsets.symmetric(
           horizontal: isMobile ? 16 : (isTablet ? 24 : 32),
           vertical: isMobile ? 20 : 32,
@@ -69,10 +68,7 @@ class ResponsiveContainer extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: containerMaxWidth),
-        child: Padding(
-          padding: containerPadding,
-          child: child,
-        ),
+        child: Padding(padding: containerPadding, child: child),
       ),
     );
   }
@@ -103,8 +99,8 @@ class ResponsiveGrid extends StatelessWidget {
     final crossAxisCount = isMobile
         ? mobileColumns ?? 1
         : isTablet
-            ? tabletColumns ?? 2
-            : desktopColumns ?? 3;
+        ? tabletColumns ?? 2
+        : desktopColumns ?? 3;
 
     return GridView.builder(
       shrinkWrap: true,

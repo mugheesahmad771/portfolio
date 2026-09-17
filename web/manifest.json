@@ -1,11 +1,11 @@
 {
-    "name": "portfolio",
-    "short_name": "portfolio",
+    "name": "Mughees Ahmad — Portfolio",
+    "short_name": "Mughees Ahmad",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B1120",
+    "theme_color": "#0B1120",
+    "description": "Mughees Ahmad — Senior Flutter & Full-Stack Developer at HBit Technology LLC. 3+ years building production Flutter, React Native, Angular and ASP.NET Core applications.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

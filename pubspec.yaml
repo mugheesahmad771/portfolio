@@ -1,5 +1,5 @@
 name: portfolio
-description: "A new Flutter project."
+description: "Mughees Ahmad — Flutter & Full-Stack Developer portfolio."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,11 +30,26 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
 
   get: ^4.7.3
   cupertino_icons: ^1.0.8
   loader_overlay: ^5.0.0
+  shared_preferences: ^2.5.3
   url_launcher: ^6.2.0
+  intl: ^0.20.3
+  visibility_detector: ^0.4.0+2
+  file_picker: ^12.3.0
+  web: ^1.1.1
+
+  # Backend API client — generated from the ASP.NET Core backend's OpenAPI
+  # spec into lib/core/api_client/ (api.*.swagger.dart). These three are
+  # runtime dependencies of that generated code, not just codegen tooling.
+  chopper: ^8.0.3
+  json_annotation: ^4.9.0
+  http: ^1.2.2
+  collection: ^1.19.1
 
 
 dev_dependencies:
@@ -48,6 +63,14 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Only needed to regenerate lib/core/api_client/*.swagger.dart when the
+  # backend's OpenAPI spec changes — not required just to build the app,
+  # since the generated output is committed.
+  build_runner: ^2.4.13
+  chopper_generator: ^8.0.3
+  json_serializable: ^6.9.0
+  swagger_dart_code_generator: ^4.0.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -60,6 +83,7 @@ flutter:
   uses-material-design: true
   assets:
      - assets/
+     - assets/image/jpeg/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -67,22 +91,28 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  # Bundled locally (variable fonts, each file covering every weight below)
+  # instead of fetched via google_fonts at runtime — that package's default
+  # behavior hits fonts.gstatic.com on first load, adding a network round
+  # trip and a flash-of-unstyled-text before the real font paints in.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/JetBrainsMono-Variable.ttf
+          weight: 700

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/constants/app_color.dart';
 
-class AppButton extends StatelessWidget {
+class AppButton extends StatefulWidget {
   final String label;
   final VoidCallback onPressed;
   final bool isPrimary;
@@ -20,51 +20,87 @@ class AppButton extends StatelessWidget {
   });
 
   @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton> {
+  bool _hovering = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onPressed,
-      child: Opacity(
-        opacity: isLoading ? 0.6 : 1.0,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isSmall ? 16 : 24,
-            vertical: isSmall ? 8 : 12,
-          ),
-          decoration: BoxDecoration(
-            color: isPrimary ? AppColors.primary : Colors.transparent,
-            border: Border.all(
-              color: isPrimary ? Colors.transparent : AppColors.border,
+    final disabled = widget.isLoading;
+    final hovering = _hovering && !disabled;
+
+    return MouseRegion(
+      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: disabled ? null : widget.onPressed,
+        child: AnimatedOpacity(
+          opacity: disabled ? 0.6 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            transform: Matrix4.translationValues(0, hovering ? -2 : 0, 0),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.isSmall ? 16 : 24,
+              vertical: widget.isSmall ? 8 : 12,
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                icon!,
-                const SizedBox(width: 8),
-              ],
-              if (isLoading)
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isPrimary ? AppColors.bg : AppColors.primary,
+            decoration: BoxDecoration(
+              color: widget.isPrimary
+                  ? (hovering ? AppColors.primaryHover : AppColors.primary)
+                  : (hovering
+                        ? AppColors.primary.withValues(alpha: 0.08)
+                        : Colors.transparent),
+              border: Border.all(
+                color: widget.isPrimary
+                    ? Colors.transparent
+                    : (hovering ? AppColors.primary : AppColors.border),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: hovering
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.icon != null) ...[
+                  widget.icon!,
+                  const SizedBox(width: 8),
+                ],
+                if (widget.isLoading)
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.isPrimary ? AppColors.bg : AppColors.primary,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: widget.isSmall ? 12 : 14,
+                      fontWeight: FontWeight.w600,
+                      color: widget.isPrimary
+                          ? AppColors.bg
+                          : (hovering ? AppColors.primary : AppColors.title),
                     ),
                   ),
-                )
-              else
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: isSmall ? 12 : 14,
-                    fontWeight: FontWeight.w600,
-                    color: isPrimary ? AppColors.bg : AppColors.title,
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -72,7 +108,7 @@ class AppButton extends StatelessWidget {
   }
 }
 
-class AppIconButton extends StatelessWidget {
+class AppIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final Color? color;
@@ -85,20 +121,42 @@ class AppIconButton extends StatelessWidget {
   });
 
   @override
+  State<AppIconButton> createState() => _AppIconButtonState();
+}
+
+class _AppIconButtonState extends State<AppIconButton> {
+  bool _hovering = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: color ?? AppColors.muted,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          width: 48,
+          height: 48,
+          transform: Matrix4.translationValues(0, _hovering ? -2 : 0, 0),
+          decoration: BoxDecoration(
+            color: _hovering
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
+            border: Border.all(
+              color: _hovering ? AppColors.primary : AppColors.border,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: _hovering
+                ? (widget.color ?? AppColors.primary)
+                : (widget.color ?? AppColors.muted),
+          ),
         ),
       ),
     );

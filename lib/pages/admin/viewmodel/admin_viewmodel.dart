@@ -1,91 +1,124 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:portfolio/services/auth_service.dart';
-import 'package:portfolio/services/project_service.dart';
+import 'package:portfolio/core/models/experience_model.dart';
 import 'package:portfolio/core/models/project_model.dart';
+import 'package:portfolio/services/auth_service.dart';
+import 'package:portfolio/services/contact_service.dart';
+import 'package:portfolio/services/experience_service.dart';
+import 'package:portfolio/services/project_service.dart';
+
+enum AdminTab { projects, experience, messages }
 
 class AdminViewModel extends GetxController {
   final AuthService authService = Get.find<AuthService>();
-  final ProjectService projectService = ProjectService();
+  final ProjectService projectService = Get.find<ProjectService>();
+  final ExperienceService experienceService = Get.find<ExperienceService>();
+  final ContactService contactService = Get.find<ContactService>();
+
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final _projects = <ProjectModel>[].obs;
+  final _experiences = <ExperienceModel>[].obs;
+  final _messages = <Map<String, dynamic>>[].obs;
+  final _tab = AdminTab.projects.obs;
   final _isLoading = false.obs;
-  final _errorMessage = ''.obs;
-  final _passCodeError = ''.obs;
+  final _isLoggingIn = false.obs;
+  final _loginError = ''.obs;
 
   List<ProjectModel> get projects => _projects;
+  List<ExperienceModel> get experiences => _experiences;
+  List<Map<String, dynamic>> get messages => _messages;
+  AdminTab get tab => _tab.value;
   bool get isLoading => _isLoading.value;
-  String get errorMessage => _errorMessage.value;
-  String get passCodeError => _passCodeError.value;
+  bool get isLoggingIn => _isLoggingIn.value;
+  String get loginError => _loginError.value;
 
   @override
   void onInit() {
     super.onInit();
-    _loadProjects();
+    if (authService.isAuthenticated) _loadAll();
   }
 
-  void _loadProjects() {
-    _projects.value = projectService.getAll();
+  void setTab(AdminTab value) {
+    _tab.value = value;
+    if (value == AdminTab.messages && _messages.isEmpty) _loadMessages();
+    update();
   }
 
-  Future<bool> authenticate(String passcode) async {
-    _isLoading.value = true;
-    _passCodeError.value = '';
-
-    final result = await authService.authenticate(passcode);
-
-    if (result) {
-      _passCodeError.value = '';
-      _isLoading.value = false;
-      return true;
+  Future<bool> login(String email, String password) async {
+    _isLoggingIn.value = true;
+    _loginError.value = '';
+    update();
+    final success = await authService.login(email, password);
+    if (success) {
+      await _loadAll();
     } else {
-      _passCodeError.value = 'Invalid passcode. Please try again.';
-      _isLoading.value = false;
-      return false;
+      _loginError.value = authService.lastError ?? 'Invalid email or password.';
+    }
+    _isLoggingIn.value = false;
+    update();
+    return success;
+  }
+
+  /// Reads [emailController]/[passwordController] and attempts login, so the
+  /// view never needs its own local state for the submit action.
+  Future<void> submitLogin() =>
+      login(emailController.text.trim(), passwordController.text);
+
+  Future<void> _loadAll() async {
+    _isLoading.value = true;
+    update();
+    try {
+      _projects.value = await projectService.getAll();
+      _experiences.value = await experienceService.getAll();
+    } catch (_) {
+      // Leave lists empty; the panel still renders with empty-state UI.
+    }
+    _isLoading.value = false;
+    update();
+  }
+
+  Future<void> _loadMessages() async {
+    try {
+      _messages.value = await contactService.getSubmissions();
+    } catch (_) {
+      _messages.value = [];
     }
   }
 
-  void addProject(ProjectModel project) {
-    projectService.addProject(project);
-    _loadProjects();
+  Future<void> deleteProject(String id) async {
+    await projectService.delete(id);
+    _projects.value = await projectService.getAll();
   }
 
-  void updateProject(ProjectModel project) {
-    projectService.updateProject(project);
-    _loadProjects();
+  Future<void> toggleFeatured(String projectId) async {
+    final matches = _projects.where((p) => p.id == projectId);
+    if (matches.isEmpty) return;
+    final project = matches.first;
+    await projectService.update(project.copyWith(featured: !project.featured));
+    _projects.value = await projectService.getAll();
   }
 
-  void deleteProject(String id) {
-    projectService.deleteProject(id);
-    _loadProjects();
-  }
-
-  void toggleFeatured(String projectId) {
-    final project = projectService.getById(projectId);
-    if (project != null) {
-      final updated = ProjectModel(
-        id: project.id,
-        title: project.title,
-        slug: project.slug,
-        shortDescription: project.shortDescription,
-        fullDescription: project.fullDescription,
-        thumbnail: project.thumbnail,
-        thumbnail2: project.thumbnail2,
-        thumbnail3: project.thumbnail3,
-        role: project.role,
-        technologies: project.technologies,
-        featured: !project.featured,
-        privateProject: project.privateProject,
-        currentlyWorking: project.currentlyWorking,
-        startDate: project.startDate,
-        endDate: project.endDate,
-        githubLink: project.githubLink,
-        liveLink: project.liveLink,
-      );
-      updateProject(updated);
-    }
+  Future<void> deleteExperience(String id) async {
+    await experienceService.delete(id);
+    _experiences.value = await experienceService.getAll();
   }
 
   void logout() {
     authService.logout();
+    _projects.clear();
+    _experiences.clear();
+    _messages.clear();
+    emailController.clear();
+    passwordController.clear();
+    update();
+  }
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
   }
 }

@@ -22,21 +22,16 @@ class ProfileModel {
   factory ProfileModel.demo() {
     return ProfileModel(
       name: 'Mughees Ahmad',
-      title: 'Full Stack Developer & Creative Technologist',
+      title:
+          'Flutter Developer • Full-Stack Mobile & Backend Engineer • AI-Enabled Solutions',
       tagline:
-          'Crafting digital experiences with cutting-edge technologies. Specialized in building responsive, scalable applications from concept to production.',
-      availability: 'Open to Opportunities',
-      specialization: [
-        'Flutter',
-        'React',
-        'Node.js',
-        'TypeScript',
-        'Firebase',
-        'REST APIs'
-      ],
+          '3+ years building production Flutter, React Native, Angular and ASP.NET Core applications — with AI-powered features and intelligent automation along the way.',
+      availability: 'Available for select remote roles',
+      specialization: ['Flutter', 'React Native', 'Angular', 'ASP.NET Core'],
       github: 'https://github.com/mugheesahmad771',
-      linkedin: 'https://linkedin.com/in/mugheesahmad',
-      relocation: 'Available for remote and in-office opportunities worldwide.',
+      linkedin: 'https://www.linkedin.com/in/mughees-ahmad-977105414/',
+      relocation:
+          'Open to relocation for the right opportunity and compensation.',
     );
   }
 }

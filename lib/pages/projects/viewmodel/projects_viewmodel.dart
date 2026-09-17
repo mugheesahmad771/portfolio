@@ -3,34 +3,44 @@ import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/services/project_service.dart';
 
 class ProjectsViewModel extends GetxController {
-  final ProjectService projectService = ProjectService();
+  final ProjectService projectService = Get.find<ProjectService>();
 
-  late List<ProjectModel> allProjects;
+  List<ProjectModel> allProjects = [];
   final _filteredProjects = <ProjectModel>[].obs;
   final _selectedCategory = 'All'.obs;
   final _searchQuery = ''.obs;
+  final _categories = <String>['All'].obs;
+  final _isLoading = true.obs;
+  final _hasError = false.obs;
 
   List<ProjectModel> get filteredProjects => _filteredProjects;
   String get selectedCategory => _selectedCategory.value;
   String get searchQuery => _searchQuery.value;
-
-  final List<String> categories = [
-    'All',
-    'Mobile',
-    'Web',
-    'Backend',
-    'Full Stack'
-  ];
+  List<String> get categories => _categories;
+  bool get isLoading => _isLoading.value;
+  bool get hasError => _hasError.value;
 
   @override
   void onInit() {
     super.onInit();
-    _loadProjects();
+    loadProjects();
   }
 
-  void _loadProjects() {
-    allProjects = projectService.getAll();
-    _filterProjects();
+  Future<void> loadProjects() async {
+    _isLoading.value = true;
+    _hasError.value = false;
+    try {
+      allProjects = await projectService.getAll();
+      // Real taxonomy derived from the platforms actually present, instead
+      // of the old fuzzy/broken substring match against technologies.
+      final platforms = allProjects.expand((p) => p.platforms).toSet().toList()
+        ..sort();
+      _categories.value = ['All', ...platforms];
+      _filterProjects();
+    } catch (_) {
+      _hasError.value = true;
+    }
+    _isLoading.value = false;
   }
 
   void setCategory(String category) {
@@ -46,27 +56,21 @@ class ProjectsViewModel extends GetxController {
   void _filterProjects() {
     var projects = allProjects;
 
-    // Filter by category
     if (_selectedCategory.value != 'All') {
       projects = projects
-          .where((p) =>
-              p.technologies
-                  .any((t) => t.contains(_selectedCategory.value)) ||
-              p.role.contains(_selectedCategory.value))
+          .where((p) => p.platforms.contains(_selectedCategory.value))
           .toList();
     }
 
-    // Filter by search
     if (_searchQuery.value.isNotEmpty) {
+      final query = _searchQuery.value.toLowerCase();
       projects = projects
-          .where((p) =>
-              p.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
-              p.shortDescription
-                  .toLowerCase()
-                  .contains(_searchQuery.value.toLowerCase()) ||
-              p.fullDescription
-                  .toLowerCase()
-                  .contains(_searchQuery.value.toLowerCase()))
+          .where(
+            (p) =>
+                p.title.toLowerCase().contains(query) ||
+                p.shortDescription.toLowerCase().contains(query) ||
+                p.fullDescription.toLowerCase().contains(query),
+          )
           .toList();
     }
 

@@ -2,32 +2,37 @@ class TechStackItem {
   final String name;
   final String category;
 
-  TechStackItem({
-    required this.name,
-    required this.category,
-  });
+  TechStackItem({required this.name, required this.category});
 }
 
 class TechStack {
   static final List<String> coreStack = [
     'Flutter',
-    'React',
-    'TypeScript',
-    'Node.js',
+    'Dart',
+    'GetX',
+    'React Native',
+    'Angular',
+    'C# / ASP.NET Web API',
     'Firebase',
-    'PostgreSQL',
+    'SQL Server',
+    'SQLite',
     'REST APIs',
-    'GraphQL',
+    'Git',
+    'Postman',
   ];
 
   static final List<TechStackItem> fullStack = [
     TechStackItem(name: 'Flutter', category: 'Mobile'),
-    TechStackItem(name: 'React', category: 'Frontend'),
-    TechStackItem(name: 'TypeScript', category: 'Language'),
-    TechStackItem(name: 'Node.js', category: 'Backend'),
-    TechStackItem(name: 'Firebase', category: 'Backend'),
-    TechStackItem(name: 'PostgreSQL', category: 'Database'),
+    TechStackItem(name: 'Dart', category: 'Mobile'),
+    TechStackItem(name: 'GetX', category: 'Mobile'),
+    TechStackItem(name: 'React Native', category: 'Mobile'),
+    TechStackItem(name: 'Angular', category: 'Frontend'),
+    TechStackItem(name: 'C# / ASP.NET Web API', category: 'Backend'),
+    TechStackItem(name: 'Firebase', category: 'Cloud'),
+    TechStackItem(name: 'SQL Server', category: 'Database'),
+    TechStackItem(name: 'SQLite', category: 'Database'),
     TechStackItem(name: 'REST APIs', category: 'Architecture'),
-    TechStackItem(name: 'GraphQL', category: 'Architecture'),
+    TechStackItem(name: 'Git', category: 'Tools'),
+    TechStackItem(name: 'Postman', category: 'Tools'),
   ];
 }

@@ -1,20 +1,30 @@
 import 'package:get/get.dart';
 import 'package:portfolio/core/models/experience_model.dart';
+import 'package:portfolio/services/experience_service.dart';
 
 class ExperienceViewModel extends GetxController {
-  late List<ExperienceModel> experiences;
+  final ExperienceService _experienceService = Get.find<ExperienceService>();
+
+  List<ExperienceModel> experiences = [];
+  bool isLoading = true;
+  bool hasError = false;
 
   @override
   void onInit() {
     super.onInit();
-    _loadExperiences();
+    loadExperiences();
   }
 
-  void _loadExperiences() {
-    experiences = [
-      ExperienceModel.demo(0),
-      ExperienceModel.demo(1),
-      ExperienceModel.demo(2),
-    ];
+  Future<void> loadExperiences() async {
+    isLoading = true;
+    hasError = false;
+    update();
+    try {
+      experiences = await _experienceService.getAll();
+    } catch (_) {
+      hasError = true;
+    }
+    isLoading = false;
+    update();
   }
 }

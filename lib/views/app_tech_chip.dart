@@ -5,11 +5,7 @@ class TechChip extends StatelessWidget {
   final String label;
   final bool isSmall;
 
-  const TechChip({
-    super.key,
-    required this.label,
-    this.isSmall = false,
-  });
+  const TechChip({super.key, required this.label, this.isSmall = false});
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +16,7 @@ class TechChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
-        border: Border.all(
-          color: AppColors.primary,
-        ),
+        border: Border.all(color: AppColors.primary),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

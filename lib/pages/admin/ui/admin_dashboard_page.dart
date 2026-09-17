@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:portfolio/core/constants/app_color.dart';
+import 'package:portfolio/core/constants/app_route.dart';
 import 'package:portfolio/pages/admin/viewmodel/admin_viewmodel.dart';
-import 'package:portfolio/pages/home/components/tech_chip.dart';
+import 'package:portfolio/views/app_badge.dart';
+import 'package:portfolio/views/app_forms.dart';
+import 'package:portfolio/views/app_tech_chip.dart';
+import 'package:portfolio/views/empty_state.dart';
 
-class AdminDashboardPage extends StatefulWidget {
+class AdminDashboardPage extends StatelessWidget {
   const AdminDashboardPage({super.key});
-
-  @override
-  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
-}
-
-class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  final _passcodeController = TextEditingController();
-
-  @override
-  void dispose() {
-    _passcodeController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +34,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             actions: [
               if (viewModel.authService.isAuthenticated)
                 TextButton(
-                  onPressed: () {
-                    viewModel.logout();
-                    _passcodeController.clear();
-                    setState(() {});
-                  },
+                  onPressed: viewModel.logout,
                   child: const Text(
                     'Logout',
                     style: TextStyle(color: AppColors.primary),
@@ -54,18 +43,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ],
           ),
           body: !viewModel.authService.isAuthenticated
-              ? _buildPasscodeScreen(viewModel)
+              ? _buildLoginScreen(viewModel)
               : _buildAdminPanel(viewModel),
         );
       },
     );
   }
 
-  Widget _buildPasscodeScreen(AdminViewModel viewModel) {
+  Widget _buildLoginScreen(AdminViewModel viewModel) {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
         child: Container(
+          width: 380,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: AppColors.card,
@@ -82,10 +72,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   color: AppColors.purple.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.lock,
-                  color: AppColors.purple,
-                ),
+                child: const Icon(Icons.lock, color: AppColors.purple),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -98,74 +85,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Enter your admin passcode to continue.',
+                'Sign in with your admin account to continue.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.muted,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               const SizedBox(height: 24),
-              TextField(
-                controller: _passcodeController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Passcode',
-                  hintStyle: const TextStyle(color: AppColors.disabled),
-                  filled: true,
-                  fillColor: AppColors.bg,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.border,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.red,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: const TextStyle(color: AppColors.title),
+              AppTextField(
+                controller: viewModel.emailController,
+                label: 'Email',
+                hint: 'you@example.com',
+                inputType: TextInputType.emailAddress,
               ),
-              if (viewModel.passCodeError.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              AppTextField(
+                controller: viewModel.passwordController,
+                label: 'Password',
+                hint: 'Your password',
+                obscureText: true,
+              ),
+              if (viewModel.loginError.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  viewModel.passCodeError,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.red,
-                  ),
+                  viewModel.loginError,
+                  style: const TextStyle(fontSize: 12, color: AppColors.red),
                 ),
               ],
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: viewModel.isLoading
+                  onPressed: viewModel.isLoggingIn
                       ? null
-                      : () async {
-                          final success =
-                              await viewModel.authenticate(_passcodeController.text);
-                          if (success && mounted) {
-                            setState(() {});
-                          }
-                        },
+                      : viewModel.submitLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.disabled,
@@ -175,7 +126,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                   ),
                   child: Text(
-                    viewModel.isLoading ? 'Loading...' : 'Unlock',
+                    viewModel.isLoggingIn ? 'Signing in...' : 'Sign In',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -192,226 +143,577 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildAdminPanel(AdminViewModel viewModel) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          const Text(
-            'ADMIN',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Projects',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: AppColors.heading,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to create project
-                Get.toNamed('/admin/new');
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Create Project'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.bg,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (viewModel.projects.isEmpty)
-            Center(
-              child: Column(
-                children: [
-                  const SizedBox(height: 48),
-                  const Text(
-                    'No projects yet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.muted,
+    return Column(
+      children: [
+        _buildTabBar(viewModel),
+        Expanded(
+          child: viewModel.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => Get.toNamed('/admin/new'),
-                    child: const Text(
-                      'Create one',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: viewModel.projects.length,
-              itemBuilder: (context, index) {
-                final project = viewModel.projects[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
+                )
+              : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  project.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.heading,
+                  child: switch (viewModel.tab) {
+                    AdminTab.projects => _buildProjectsTab(viewModel),
+                    AdminTab.experience => _buildExperienceTab(viewModel),
+                    AdminTab.messages => _buildMessagesTab(viewModel),
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabBar(AdminViewModel viewModel) {
+    return Container(
+      color: AppColors.bgSecondary,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          _tabButton(
+            viewModel,
+            AdminTab.projects,
+            'Projects',
+            Icons.folder_outlined,
+          ),
+          _tabButton(
+            viewModel,
+            AdminTab.experience,
+            'Experience',
+            Icons.work_outline,
+          ),
+          _tabButton(
+            viewModel,
+            AdminTab.messages,
+            'Messages',
+            Icons.mail_outline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(
+    AdminViewModel viewModel,
+    AdminTab tab,
+    String label,
+    IconData icon,
+  ) {
+    final active = viewModel.tab == tab;
+    return GestureDetector(
+      onTap: () => viewModel.setTab(tab),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary.withValues(alpha: 0.12) : null,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 17,
+              color: active ? AppColors.primary : AppColors.muted,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? AppColors.primary : AppColors.muted,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectsTab(AdminViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Projects',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.heading,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => Get.toNamed(AppRoute.projectForm),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Project'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.bg,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (viewModel.projects.isEmpty)
+          const EmptyState(
+            icon: Icons.folder_open_outlined,
+            message: 'No projects yet — create your first one above.',
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: viewModel.projects.length,
+            itemBuilder: (context, index) {
+              final project = viewModel.projects[index];
+              return _AdminCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      project.title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.heading,
+                                      ),
+                                    ),
                                   ),
+                                  if (project.featured || project.privateProject) ...[
+                                    const SizedBox(width: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      children: [
+                                        if (project.featured)
+                                          const AppBadge(
+                                            label: 'Featured',
+                                            showDot: false,
+                                            backgroundColor: AppColors.orange,
+                                          ),
+                                        if (project.privateProject)
+                                          const AppBadge(
+                                            label: 'NDA',
+                                            showDot: false,
+                                            backgroundColor: AppColors.purple,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                project.slug,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.muted,
+                                  fontFamily: 'monospace',
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  project.slug,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.muted,
-                                    fontFamily: 'monospace',
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                size: 20,
+                                color: AppColors.muted,
+                              ),
+                              tooltip: 'Edit',
+                              onPressed: () => Get.toNamed(
+                                '${AppRoute.projectForm}/${project.id}',
+                              ),
+                            ),
+                            PopupMenuButton(
+                              color: AppColors.card,
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.open_in_new,
+                                        size: 18,
+                                        color: AppColors.muted,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text('View live page'),
+                                    ],
+                                  ),
+                                  onTap: () => _openPublicPage(project.slug),
+                                ),
+                                PopupMenuItem(
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.star_outline,
+                                        size: 18,
+                                        color: AppColors.muted,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        project.featured
+                                            ? 'Unfeature'
+                                            : 'Mark as Featured',
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () async {
+                                    await viewModel.toggleFeatured(
+                                      project.id,
+                                    );
+                                    Get.snackbar(
+                                      'Updated',
+                                      project.featured
+                                          ? 'Removed from Featured'
+                                          : 'Marked as Featured',
+                                      duration: const Duration(seconds: 2),
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: AppColors.red,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(color: AppColors.red),
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () => Future.delayed(
+                                    Duration.zero,
+                                    () => _confirmDeleteProject(
+                                      viewModel,
+                                      project.id,
+                                      project.title,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          PopupMenuButton(
-                            color: AppColors.card,
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                child: const Text('Toggle Featured'),
-                                onTap: () =>
-                                    viewModel.toggleFeatured(project.id),
-                              ),
-                              PopupMenuItem(
-                                child: const Text('Delete'),
-                                onTap: () =>
-                                    viewModel.deleteProject(project.id),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (project.featured)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.orange.withValues(alpha: 0.1),
-                                border: Border.all(color: AppColors.orange),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Featured',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.orange,
-                                ),
-                              ),
-                            ),
-                          if (project.privateProject)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.purple.withValues(alpha: 0.1),
-                                border: Border.all(color: AppColors.purple),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'NDA',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.purple,
-                                ),
-                              ),
-                            ),
-                          if (project.currentlyWorking)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.green.withValues(alpha: 0.1),
-                                border: Border.all(color: AppColors.green),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Ongoing',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.green,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: project.technologies
-                            .take(3)
-                            .map((tech) =>
-                                TechChip(label: tech, isSmall: true))
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: project.technologies
+                          .take(3)
+                          .map((tech) => TechChip(label: tech, isSmall: true))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  /// Opens the project's public detail page in a new tab so the admin
+  /// session/scroll position isn't lost.
+  Future<void> _openPublicPage(String slug) async {
+    final url = Uri.base.replace(path: '/projects/$slug');
+    await launchUrl(url, webOnlyWindowName: '_blank');
+  }
+
+  /// Shared confirm-before-delete prompt — every destructive delete in this
+  /// dashboard goes through this instead of firing immediately on tap.
+  Future<bool> _confirmDelete({
+    required String title,
+    required String message,
+  }) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: Text(title, style: const TextStyle(color: AppColors.heading)),
+        content: Text(message, style: const TextStyle(color: AppColors.muted)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.muted),
             ),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.red)),
+          ),
         ],
       ),
+    );
+    return confirmed == true;
+  }
+
+  Future<void> _confirmDeleteProject(
+    AdminViewModel viewModel,
+    String id,
+    String title,
+  ) async {
+    final ok = await _confirmDelete(
+      title: 'Delete project?',
+      message:
+          'This removes "$title" from the public site. This cannot be undone from here.',
+    );
+    if (!ok) return;
+    await viewModel.deleteProject(id);
+    Get.snackbar(
+      'Deleted',
+      '"$title" was removed',
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  Future<void> _confirmDeleteExperience(
+    AdminViewModel viewModel,
+    String id,
+    String role,
+  ) async {
+    final ok = await _confirmDelete(
+      title: 'Delete experience?',
+      message:
+          'This removes "$role" from the public site. This cannot be undone from here.',
+    );
+    if (!ok) return;
+    await viewModel.deleteExperience(id);
+    Get.snackbar(
+      'Deleted',
+      '"$role" was removed',
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  Widget _buildExperienceTab(AdminViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Experience',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.heading,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => Get.toNamed(AppRoute.adminExperienceForm),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Experience'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.bg,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (viewModel.experiences.isEmpty)
+          const EmptyState(
+            icon: Icons.work_outline,
+            message: 'No experience entries yet — add your first role above.',
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: viewModel.experiences.length,
+            itemBuilder: (context, index) {
+              final exp = viewModel.experiences[index];
+              return _AdminCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            exp.role,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.heading,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${exp.company} · ${exp.duration}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: AppColors.muted,
+                      ),
+                      tooltip: 'Edit',
+                      onPressed: () => Get.toNamed(
+                        '${AppRoute.adminExperienceForm}/${exp.id}',
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: AppColors.red,
+                      ),
+                      tooltip: 'Delete',
+                      onPressed: () => _confirmDeleteExperience(
+                        viewModel,
+                        exp.id,
+                        exp.role,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMessagesTab(AdminViewModel viewModel) {
+    final fmt = DateFormat('MMM d, yyyy · h:mm a');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Messages',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.heading,
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (viewModel.messages.isEmpty)
+          const EmptyState(
+            icon: Icons.mail_outline,
+            message: "No messages yet — they'll show up here once someone "
+                'reaches out.',
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: viewModel.messages.length,
+            itemBuilder: (context, index) {
+              final m = viewModel.messages[index];
+              DateTime? submitted;
+              try {
+                submitted = DateTime.parse(m['submittedAtUtc'] as String);
+              } catch (_) {}
+              return _AdminCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${m['name']} · ${m['email']}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.heading,
+                          ),
+                        ),
+                        if (submitted != null)
+                          Text(
+                            fmt.format(submitted),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${m['message']}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.body,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+/// Shared card chrome for every row across the projects/experience/messages
+/// tabs — was three copies of the same [Container]/[BoxDecoration] pair.
+class _AdminCard extends StatelessWidget {
+  final Widget child;
+  const _AdminCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: child,
     );
   }
 }

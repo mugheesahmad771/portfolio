@@ -1,48 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:portfolio/core/constants/app_color.dart';
+import 'package:portfolio/core/constants/breakpoints.dart';
 import 'package:portfolio/pages/projects/viewmodel/projects_viewmodel.dart';
-import 'package:portfolio/pages/home/components/section_header.dart';
-import 'package:portfolio/pages/home/components/project_card.dart';
+import 'package:portfolio/views/app_buttons.dart';
+import 'package:portfolio/views/app_project_card.dart';
+import 'package:portfolio/views/app_section_header.dart';
+import 'package:portfolio/views/empty_state.dart';
+import 'package:portfolio/views/scroll_reveal.dart';
 
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isMobile = screenSize.width < 600;
+    final isMobile = Breakpoints.isMobile(context);
 
     return GetBuilder<ProjectsViewModel>(
       init: ProjectsViewModel(),
       builder: (viewModel) {
         return Container(
           color: AppColors.bg,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 40,
-                  vertical: 48,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 16 : 40,
+              vertical: 48,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionHeader(
+                  eyebrow: 'PORTFOLIO',
+                  title: 'All Projects',
+                  description:
+                      'Explore all projects I\'ve worked on, from mobile apps to full-stack applications.',
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SectionHeader(
-                      eyebrow: 'PORTFOLIO',
-                      title: 'All Projects',
-                      description:
-                          'Explore all projects I\'ve worked on, from mobile apps to full-stack applications.',
-                    ),
-                    const SizedBox(height: 32),
-                    _buildFilterSection(viewModel, isMobile),
-                    const SizedBox(height: 32),
-                    _buildProjectsGrid(viewModel, isMobile),
-                    const SizedBox(height: 48),
-                  ],
-                ),
-              ),
-            ],
+                const SizedBox(height: 32),
+                _buildFilterSection(viewModel, isMobile),
+                const SizedBox(height: 32),
+                _buildBody(viewModel, isMobile),
+                const SizedBox(height: 48),
+              ],
+            ),
           ),
         );
       },
@@ -78,96 +77,113 @@ class ProjectsPage extends StatelessWidget {
           style: const TextStyle(color: AppColors.title),
         ),
         const SizedBox(height: 24),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: viewModel.categories
-                .map((category) => Padding(
+        Obx(
+          () => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: viewModel.categories
+                  .map(
+                    (category) => Padding(
                       padding: const EdgeInsets.only(right: 12),
-                      child: Obx(
-                        () => GestureDetector(
-                          onTap: () => viewModel.setCategory(category),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
+                      child: GestureDetector(
+                        onTap: () => viewModel.setCategory(category),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: viewModel.selectedCategory == category
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            border: Border.all(
                               color: viewModel.selectedCategory == category
                                   ? AppColors.primary
-                                  : Colors.transparent,
-                              border: Border.all(
-                                color:
-                                    viewModel.selectedCategory == category
-                                        ? AppColors.primary
-                                        : AppColors.border,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
+                                  : AppColors.border,
                             ),
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                color: viewModel.selectedCategory == category
-                                    ? AppColors.bg
-                                    : AppColors.title,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            category,
+                            style: TextStyle(
+                              color: viewModel.selectedCategory == category
+                                  ? AppColors.bg
+                                  : AppColors.title,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
                             ),
                           ),
                         ),
                       ),
-                    ))
-                .toList(),
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildProjectsGrid(ProjectsViewModel viewModel, bool isMobile) {
-    return Obx(
-      () => viewModel.filteredProjects.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.folder_open,
-                      size: 64,
-                      color: AppColors.disabled,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No projects found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isMobile ? 1 : 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.2,
-              ),
-              itemCount: viewModel.filteredProjects.length,
-              itemBuilder: (context, index) {
-                final project = viewModel.filteredProjects[index];
-                return ProjectCard(
-                  project: project,
-                  onTap: () => Get.toNamed('/projects/${project.slug}'),
-                );
-              },
+  Widget _buildBody(ProjectsViewModel viewModel, bool isMobile) {
+    return Obx(() {
+      if (viewModel.isLoading) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 64),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
-    );
+          ),
+        );
+      }
+      if (viewModel.hasError) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Center(
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.disabled,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Couldn\'t load projects.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 16),
+                AppButton(label: 'Retry', onPressed: viewModel.loadProjects),
+              ],
+            ),
+          ),
+        );
+      }
+      if (viewModel.filteredProjects.isEmpty) {
+        return const EmptyState(
+          icon: Icons.folder_open_outlined,
+          message: 'No projects found',
+        );
+      }
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isMobile ? 1 : 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.1,
+        ),
+        itemCount: viewModel.filteredProjects.length,
+        itemBuilder: (context, index) {
+          final project = viewModel.filteredProjects[index];
+          return ScrollReveal(
+            id: 'project-${project.id}',
+            child: ProjectCard(project: project),
+          );
+        },
+      );
+    });
   }
 }

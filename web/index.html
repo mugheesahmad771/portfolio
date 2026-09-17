@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,28 +18,170 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mughees Ahmad — Senior Flutter & Full-Stack Developer at HBit Technology LLC. 3+ years building production Flutter, React Native, Angular and ASP.NET Core applications.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0B1120">
+  <link rel="canonical" href="https://mugheesahmad.dev/">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="portfolio">
+  <meta name="apple-mobile-web-app-title" content="Mughees Ahmad">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>portfolio</title>
+  <title>Mughees Ahmad — Flutter & Full-Stack Developer</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Open Graph -->
+  <!-- TODO: update og:url once a real domain is chosen -->
+  <meta property="og:title" content="Mughees Ahmad — Flutter & Full-Stack Developer">
+  <meta property="og:description" content="Mughees Ahmad — Senior Flutter & Full-Stack Developer at HBit Technology LLC. 3+ years building production Flutter, React Native, Angular and ASP.NET Core applications.">
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="https://mugheesahmad.dev/">
+  <!-- TODO: replace with a proper social-card image; this points at the profile photo as a placeholder -->
+  <meta property="og:image" content="assets/assets/image/jpeg/profile.jpeg">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mughees Ahmad — Flutter & Full-Stack Developer">
+  <meta name="twitter:description" content="Mughees Ahmad — Senior Flutter & Full-Stack Developer at HBit Technology LLC. 3+ years building production Flutter, React Native, Angular and ASP.NET Core applications.">
+
+  <!-- JSON-LD structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Mughees Ahmad",
+    "jobTitle": "Senior Flutter & Full Stack Developer",
+    "worksFor": {
+      "@type": "Organization",
+      "name": "HBit Technology LLC"
+    },
+    "sameAs": [
+      "https://github.com/mugheesahmad771",
+      "https://www.linkedin.com/in/mughees-ahmad-977105414/"
+    ]
+  }
+  </script>
+
+  <style>
+    /* Pre-Flutter splash — visible from the instant the HTML parses, long
+       before any Dart/JS has run. Removed by flutter_bootstrap.js the
+       moment the Flutter engine is ready to paint (see body, bottom).
+       Colors match lib/core/constants/app_color.dart so there's no visual
+       flash when Flutter takes over. */
+    html, body { margin: 0; padding: 0; background: #0B1120; }
+    #app-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      background: #0B1120;
+      color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+      box-sizing: border-box;
+      z-index: 9999;
+    }
+    #app-splash .mark {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: #38BDF8;
+      color: #0B1120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+    }
+    #app-splash h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+    }
+    #app-splash p {
+      font-size: 14px;
+      color: #94A3B8;
+      max-width: 420px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    #app-splash nav {
+      display: none;
+    }
+    #app-splash .spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid #243244;
+      border-top-color: #38BDF8;
+      animation: app-splash-spin 0.8s linear infinite;
+    }
+    @keyframes app-splash-spin {
+      to { transform: rotate(360deg); }
+    }
+    .noscript-banner {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #CBD5E1;
+    }
+  </style>
 </head>
 <body>
   <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+    Real, semantic, crawlable markup — not a JS-rendered shadow of the app.
+    Flutter Web draws everything to canvas/DOM at runtime, so without this
+    the raw HTML a non-JS-executing crawler or link-preview bot fetches is
+    otherwise empty. This same markup doubles as the loading screen real
+    visitors see before the Flutter engine paints its first frame — it's
+    removed automatically the instant that happens (see the script at the
+    bottom), so there's no separate "loading" state to maintain.
+  -->
+  <div id="app-splash" role="status" aria-live="polite">
+    <div class="mark" aria-hidden="true">MA</div>
+    <h1>Mughees Ahmad</h1>
+    <p>
+      Senior Flutter &amp; Full-Stack Developer at HBit Technology LLC —
+      3+ years building production Flutter, React Native, Angular and
+      ASP.NET Core applications.
+    </p>
+    <nav aria-label="Site">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/experience">Experience</a>
+      <a href="/projects">Projects</a>
+      <a href="/skills">Skills</a>
+      <a href="/resume">Resume</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <div class="spinner" aria-hidden="true"></div>
+    <noscript>
+      <div class="noscript-banner">
+        This site needs JavaScript enabled to run the full interactive
+        experience. You can still reach me directly at
+        <a href="mailto:mugheesahmad771@gmail.com">mugheesahmad771@gmail.com</a>.
+      </div>
+    </noscript>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
+  <!--
+    Customized (this is not the Flutter-generated default) — see
+    web/flutter_bootstrap.js. It removes #app-splash the moment the engine
+    reports it's ready to paint, right before handing off to runApp().
   -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
