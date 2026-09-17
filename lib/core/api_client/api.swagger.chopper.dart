@@ -47,6 +47,20 @@ final class _$Api extends Api {
   }
 
   @override
+  Future<Response<dynamic>> _apiAuthChangePasswordPost(
+      {required ChangePasswordRequestModel? body}) {
+    final Uri $url = Uri.parse('/api/Auth/change-password');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<ContactSubmissionDto>> _apiContactPost(
       {required SubmitContactRequestModel? body}) {
     final Uri $url = Uri.parse('/api/Contact');

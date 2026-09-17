@@ -233,6 +233,20 @@ Map<String, dynamic> _$LoginResponseDtoToJson(LoginResponseDto instance) =>
       'refreshToken': instance.refreshToken,
     };
 
+ChangePasswordRequestModel _$ChangePasswordRequestModelFromJson(
+        Map<String, dynamic> json) =>
+    ChangePasswordRequestModel(
+      currentPassword: json['currentPassword'] as String?,
+      newPassword: json['newPassword'] as String?,
+    );
+
+Map<String, dynamic> _$ChangePasswordRequestModelToJson(
+        ChangePasswordRequestModel instance) =>
+    <String, dynamic>{
+      'currentPassword': instance.currentPassword,
+      'newPassword': instance.newPassword,
+    };
+
 RefreshTokenRequestModel _$RefreshTokenRequestModelFromJson(
         Map<String, dynamic> json) =>
     RefreshTokenRequestModel(

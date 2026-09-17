@@ -1012,6 +1012,72 @@ extension $LoginResponseDtoExtension on LoginResponseDto {
 }
 
 @JsonSerializable(explicitToJson: true)
+class ChangePasswordRequestModel {
+  const ChangePasswordRequestModel({this.currentPassword, this.newPassword});
+
+  factory ChangePasswordRequestModel.fromJson(Map<String, dynamic> json) =>
+      _$ChangePasswordRequestModelFromJson(json);
+
+  static const toJsonFactory = _$ChangePasswordRequestModelToJson;
+  Map<String, dynamic> toJson() => _$ChangePasswordRequestModelToJson(this);
+
+  @JsonKey(name: 'currentPassword')
+  final String? currentPassword;
+  @JsonKey(name: 'newPassword')
+  final String? newPassword;
+  static const fromJsonFactory = _$ChangePasswordRequestModelFromJson;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is ChangePasswordRequestModel &&
+            (identical(other.currentPassword, currentPassword) ||
+                const DeepCollectionEquality().equals(
+                  other.currentPassword,
+                  currentPassword,
+                )) &&
+            (identical(other.newPassword, newPassword) ||
+                const DeepCollectionEquality().equals(
+                  other.newPassword,
+                  newPassword,
+                )));
+  }
+
+  @override
+  String toString() => jsonEncode(this);
+
+  @override
+  int get hashCode =>
+      const DeepCollectionEquality().hash(currentPassword) ^
+      const DeepCollectionEquality().hash(newPassword) ^
+      runtimeType.hashCode;
+}
+
+extension $ChangePasswordRequestModelExtension on ChangePasswordRequestModel {
+  ChangePasswordRequestModel copyWith({
+    String? currentPassword,
+    String? newPassword,
+  }) {
+    return ChangePasswordRequestModel(
+      currentPassword: currentPassword ?? this.currentPassword,
+      newPassword: newPassword ?? this.newPassword,
+    );
+  }
+
+  ChangePasswordRequestModel copyWithWrapped({
+    Wrapped<String?>? currentPassword,
+    Wrapped<String?>? newPassword,
+  }) {
+    return ChangePasswordRequestModel(
+      currentPassword: (currentPassword != null
+          ? currentPassword.value
+          : this.currentPassword),
+      newPassword: (newPassword != null ? newPassword.value : this.newPassword),
+    );
+  }
+}
+
+@JsonSerializable(explicitToJson: true)
 class RefreshTokenRequestModel {
   const RefreshTokenRequestModel({this.refreshToken});
 

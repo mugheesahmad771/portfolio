@@ -85,6 +85,19 @@ abstract class Api extends ChopperService {
   });
 
   ///
+  Future<chopper.Response> apiAuthChangePasswordPost({
+    required ChangePasswordRequestModel? body,
+  }) {
+    return _apiAuthChangePasswordPost(body: body);
+  }
+
+  ///
+  @POST(path: '/api/Auth/change-password', optionalBody: true)
+  Future<chopper.Response> _apiAuthChangePasswordPost({
+    @Body() required ChangePasswordRequestModel? body,
+  });
+
+  ///
   Future<chopper.Response<ContactSubmissionDto>> apiContactPost({
     required SubmitContactRequestModel? body,
   }) {

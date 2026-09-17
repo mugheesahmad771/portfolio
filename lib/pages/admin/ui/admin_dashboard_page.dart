@@ -32,7 +32,14 @@ class AdminDashboardPage extends StatelessWidget {
               ),
             ),
             actions: [
-              if (viewModel.authService.isAuthenticated)
+              if (viewModel.authService.isAuthenticated) ...[
+                TextButton(
+                  onPressed: () => _openChangePasswordDialog(viewModel),
+                  child: const Text(
+                    'Change Password',
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                ),
                 TextButton(
                   onPressed: viewModel.logout,
                   child: const Text(
@@ -40,6 +47,7 @@ class AdminDashboardPage extends StatelessWidget {
                     style: TextStyle(color: AppColors.primary),
                   ),
                 ),
+              ],
             ],
           ),
           body: !viewModel.authService.isAuthenticated
@@ -140,6 +148,92 @@ class AdminDashboardPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openChangePasswordDialog(AdminViewModel viewModel) async {
+    viewModel.openChangePasswordDialog();
+    final success = await Get.dialog<bool>(
+      barrierDismissible: false,
+      GetBuilder<AdminViewModel>(
+        builder: (vm) => AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          title: const Text(
+            'Change password',
+            style: TextStyle(color: AppColors.heading),
+          ),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppTextField(
+                  controller: vm.currentPasswordController,
+                  label: 'Current password',
+                  hint: 'Your current password',
+                  obscureText: true,
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: vm.newPasswordController,
+                  label: 'New password',
+                  hint: 'At least 8 characters',
+                  obscureText: true,
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: vm.confirmPasswordController,
+                  label: 'Confirm new password',
+                  hint: 'Repeat new password',
+                  obscureText: true,
+                ),
+                if (vm.changePasswordError.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    vm.changePasswordError,
+                    style: const TextStyle(fontSize: 12, color: AppColors.red),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: vm.isChangingPassword
+                  ? null
+                  : () => Get.back(result: false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.muted),
+              ),
+            ),
+            TextButton(
+              onPressed: vm.isChangingPassword
+                  ? null
+                  : () async {
+                      final ok = await vm.submitChangePassword();
+                      if (ok) Get.back(result: true);
+                    },
+              child: Text(
+                vm.isChangingPassword ? 'Saving...' : 'Save',
+                style: const TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (success == true) {
+      Get.snackbar(
+        'Password changed',
+        'Please sign in again with your new password.',
+        duration: const Duration(seconds: 3),
+      );
+    }
   }
 
   Widget _buildAdminPanel(AdminViewModel viewModel) {

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:portfolio/core/api_client/main_client.dart';
 import 'package:portfolio/core/models/experience_model.dart';
 import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/services/auth_service.dart';
@@ -18,6 +19,12 @@ class AdminViewModel extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  final TextEditingController currentPasswordController =
+      TextEditingController();
+  final TextEditingController newPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+
   final _projects = <ProjectModel>[].obs;
   final _experiences = <ExperienceModel>[].obs;
   final _messages = <Map<String, dynamic>>[].obs;
@@ -25,6 +32,8 @@ class AdminViewModel extends GetxController {
   final _isLoading = false.obs;
   final _isLoggingIn = false.obs;
   final _loginError = ''.obs;
+  final _isChangingPassword = false.obs;
+  final _changePasswordError = ''.obs;
 
   List<ProjectModel> get projects => _projects;
   List<ExperienceModel> get experiences => _experiences;
@@ -33,6 +42,8 @@ class AdminViewModel extends GetxController {
   bool get isLoading => _isLoading.value;
   bool get isLoggingIn => _isLoggingIn.value;
   String get loginError => _loginError.value;
+  bool get isChangingPassword => _isChangingPassword.value;
+  String get changePasswordError => _changePasswordError.value;
 
   @override
   void onInit() {
@@ -105,6 +116,68 @@ class AdminViewModel extends GetxController {
     _experiences.value = await experienceService.getAll();
   }
 
+  void openChangePasswordDialog() {
+    currentPasswordController.clear();
+    newPasswordController.clear();
+    confirmPasswordController.clear();
+    _changePasswordError.value = '';
+    update();
+  }
+
+  /// Returns true on success. The backend revokes every refresh token on a
+  /// successful change, so [AuthService.changePassword] also signs this
+  /// session out — the caller should route back to the login screen.
+  Future<bool> submitChangePassword() async {
+    final current = currentPasswordController.text;
+    final next = newPasswordController.text;
+    final confirm = confirmPasswordController.text;
+
+    if (current.isEmpty || next.isEmpty || confirm.isEmpty) {
+      _changePasswordError.value = 'All fields are required.';
+      update();
+      return false;
+    }
+    if (next.length < 8) {
+      _changePasswordError.value =
+          'New password must be at least 8 characters.';
+      update();
+      return false;
+    }
+    if (next != confirm) {
+      _changePasswordError.value = 'New password and confirmation do not match.';
+      update();
+      return false;
+    }
+
+    _isChangingPassword.value = true;
+    _changePasswordError.value = '';
+    update();
+    try {
+      await authService.changePassword(
+        currentPassword: current,
+        newPassword: next,
+      );
+      _projects.clear();
+      _experiences.clear();
+      _messages.clear();
+      emailController.clear();
+      passwordController.clear();
+      currentPasswordController.clear();
+      newPasswordController.clear();
+      confirmPasswordController.clear();
+      _isChangingPassword.value = false;
+      update();
+      return true;
+    } on ApiException catch (e) {
+      _changePasswordError.value = e.message;
+    } catch (_) {
+      _changePasswordError.value = 'Something went wrong. Please try again.';
+    }
+    _isChangingPassword.value = false;
+    update();
+    return false;
+  }
+
   void logout() {
     authService.logout();
     _projects.clear();
@@ -119,6 +192,9 @@ class AdminViewModel extends GetxController {
   void onClose() {
     emailController.dispose();
     passwordController.dispose();
+    currentPasswordController.dispose();
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 }

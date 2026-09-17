@@ -55,4 +55,22 @@ class AuthService extends GetxService {
     await sessionHelper.signOut();
     _isAuthenticated.value = false;
   }
+
+  /// Throws [ApiException] with the backend's message on failure (e.g.
+  /// wrong current password) so the caller can show it directly.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await mainClient.apiAuthChangePasswordPost(
+      body: ChangePasswordRequestModel(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ),
+    );
+    // The backend revokes every outstanding refresh token on password
+    // change, including this session's — force a fresh login rather than
+    // let the next silent refresh fail unexpectedly.
+    await logout();
+  }
 }
