@@ -365,6 +365,40 @@ class AdminDashboardPage extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: viewModel.isSyncingSeed
+                ? null
+                : () => _syncSeedProjects(viewModel),
+            icon: viewModel.isSyncingSeed
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.muted,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.cloud_sync_outlined, size: 18),
+            label: Text(
+              viewModel.isSyncingSeed
+                  ? 'Syncing...'
+                  : 'Sync Seed Projects',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.muted,
+              side: const BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -593,6 +627,28 @@ class AdminDashboardPage extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// Inserts any seed project missing from the database (see the backend's
+  /// DbSeeder) — the admin-facing trigger for a database that was never
+  /// empty when the normal startup seeding would have run.
+  Future<void> _syncSeedProjects(AdminViewModel viewModel) async {
+    try {
+      final added = await viewModel.syncSeedProjects();
+      Get.snackbar(
+        added.isEmpty ? 'Already up to date' : 'Synced',
+        added.isEmpty
+            ? 'Every seed project is already in the database.'
+            : 'Added ${added.length} project(s): ${added.join(', ')}',
+        duration: const Duration(seconds: 4),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Sync failed',
+        '$e',
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 
   /// Opens the project's public detail page in a new tab so the admin

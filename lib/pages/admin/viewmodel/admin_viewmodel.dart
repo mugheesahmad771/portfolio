@@ -47,6 +47,7 @@ class AdminViewModel extends GetxController {
   final _projectPage = 1.obs;
   final _projectTotalCount = 0.obs;
   final _isProjectsRefreshing = false.obs;
+  final _isSyncingSeed = false.obs;
   Timer? _projectSearchDebounce;
 
   List<ProjectModel> get projects => _projects;
@@ -64,6 +65,7 @@ class AdminViewModel extends GetxController {
   int get projectPageCount =>
       (_projectTotalCount.value / projectPageSize).ceil().clamp(1, 999999);
   bool get isProjectsRefreshing => _isProjectsRefreshing.value;
+  bool get isSyncingSeed => _isSyncingSeed.value;
 
   @override
   void onInit() {
@@ -152,6 +154,23 @@ class AdminViewModel extends GetxController {
     }
     _isProjectsRefreshing.value = false;
     update();
+  }
+
+  /// Returns the slugs actually added, so the caller can show what
+  /// happened (including the "nothing to add" case) rather than a generic
+  /// success toast.
+  Future<List<String>> syncSeedProjects() async {
+    _isSyncingSeed.value = true;
+    update();
+    List<String> added = [];
+    try {
+      added = await projectService.syncSeedProjects();
+      if (added.isNotEmpty) await _loadProjectsPage();
+    } finally {
+      _isSyncingSeed.value = false;
+      update();
+    }
+    return added;
   }
 
   Future<void> _loadMessages() async {

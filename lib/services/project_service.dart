@@ -227,6 +227,28 @@ class ProjectService extends GetxService {
     return ProjectPageResult(items: items, totalCount: totalCount);
   }
 
+  /// Inserts any seed project (see the backend's DbSeeder) that isn't
+  /// already in the database, matched by slug. Safe to call repeatedly —
+  /// never touches or duplicates an existing row — for catching production
+  /// up after new entries are added to the seed in code but the table was
+  /// never empty for the normal startup seeding to run against.
+  Future<List<String>> syncSeedProjects() async {
+    final baseUrl = production ? apiProdBase : apiDebugBase;
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/Projects/sync-seed'),
+      headers: {'Authorization': 'Bearer ${sessionHelper.accessToken ?? ''}'},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_extractErrorMessage(response), response.statusCode);
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (data['addedSlugs'] as List<dynamic>? ?? const [])
+        .map((e) => e as String)
+        .toList();
+  }
+
   Future<List<ProjectModel>> getFeatured() async {
     final response = await mainClient.apiProjectsGet(featured: true);
     return (response.body ?? const []).map(_fromDto).toList();
