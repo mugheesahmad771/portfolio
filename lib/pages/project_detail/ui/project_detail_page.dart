@@ -9,13 +9,17 @@ import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/pages/project_detail/viewmodel/project_detail_viewmodel.dart';
 import 'package:portfolio/views/app_badge.dart';
 import 'package:portfolio/views/app_project_card.dart';
+import 'package:portfolio/views/app_screenshot_tabs.dart';
 import 'package:portfolio/views/app_section_header.dart';
 import 'package:portfolio/views/app_tech_chip.dart';
+import 'package:portfolio/views/fade_slide_in.dart';
 import 'package:portfolio/views/image_lightbox.dart';
 import 'package:portfolio/views/project_media_fallback.dart';
 import 'package:portfolio/views/responsive_layout.dart';
+import 'package:portfolio/views/screenshot_thumb.dart';
 import 'package:portfolio/views/scroll_reveal.dart';
 import 'package:portfolio/views/tilt_card.dart';
+import 'package:portfolio/views/video_preview_card.dart';
 
 class ProjectDetailPage extends StatelessWidget {
   const ProjectDetailPage({super.key});
@@ -362,6 +366,22 @@ class ProjectDetailPage extends StatelessWidget {
             ),
           ),
         ],
+        if (project.videoUrl != null && project.videoUrl!.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          Text(
+            'DEMO VIDEO',
+            style: AppTextStyles.mono(
+              fontSize: 12,
+              color: AppColors.primary,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ScrollReveal(
+            id: 'project-video-${project.id}',
+            child: VideoPreviewCard(videoUrl: project.videoUrl!),
+          ),
+        ],
         if (project.canShowScreenshots && project.apps.isNotEmpty) ...[
           const SizedBox(height: 32),
           Text(
@@ -373,7 +393,7 @@ class ProjectDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ..._buildAppSections(project),
+          AppScreenshotTabs(apps: project.apps, projectTitle: project.title),
         ] else if (project.canShowScreenshots &&
             project.screenshots.isNotEmpty) ...[
           const SizedBox(height: 32),
@@ -386,124 +406,59 @@ class ProjectDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildScreenshotGrid(project.screenshots, project.title),
+          _buildScreenshotGrid(context, project.screenshots, project.title),
         ],
       ],
     );
   }
 
-  /// One project can ship several distinct apps (e.g. a customer app, a
-  /// driver app and an admin dashboard). Each [ProjectApp] gets its own
-  /// platform-tagged card so a visitor can tell what's actually included —
-  /// a plain flat screenshot grid can't express that.
-  List<Widget> _buildAppSections(ProjectModel project) {
-    return project.apps
-        .map(
-          (app) => Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _platformIcon(app.platform),
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      app.platform.isNotEmpty
-                          ? '${app.label} · ${app.platform}'
-                          : app.label,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.heading,
-                      ),
-                    ),
-                  ],
-                ),
-                if (app.screenshots.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: app.screenshots.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      // A horizontal ListView child needs its own bounded
-                      // width — the outer SizedBox only constrains height,
-                      // so without this the image has nothing to size
-                      // itself against.
-                      itemBuilder: (context, i) => SizedBox(
-                        width: 160,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: () => ImageLightbox.show(
-                              context,
-                              images: app.screenshots,
-                              initialIndex: i,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                app.screenshots[i],
-                                fit: BoxFit.cover,
-                                semanticLabel:
-                                    '${app.label} ${app.platform} screenshot ${i + 1}',
-                                errorBuilder: (c, e, s) =>
-                                    const SizedBox.shrink(),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        )
-        .toList();
-  }
 
-  Widget _buildScreenshotGrid(List<String> screenshots, String title) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cols = constraints.maxWidth < 500 ? 1 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 4 / 3,
-          ),
-          itemCount: screenshots.length,
-          itemBuilder: (context, i) => MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => ImageLightbox.show(
-                context,
-                images: screenshots,
-                initialIndex: i,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  screenshots[i],
-                  fit: BoxFit.cover,
-                  semanticLabel: '$title screenshot ${i + 1}',
-                ),
-              ),
+  // Deliberately built from Wrap + fixed-size tiles instead of GridView:
+  // this section sits inside the desktop two-column split, which is
+  // wrapped in an IntrinsicHeight to match the sidebar's height — and
+  // IntrinsicHeight requires every descendant to support computing its own
+  // intrinsic size. GridView is Viewport-backed and can't (Viewports have
+  // no well-defined intrinsic size), which silently collapses the whole
+  // row to zero height instead of throwing. Wrap is a plain RenderBox and
+  // handles it correctly — same reason the related-projects grid below
+  // uses Wrap over GridView. Also can't use LayoutBuilder to measure the
+  // real available width for the same IntrinsicHeight reason, so the
+  // column width is approximated from the viewport — on desktop the main
+  // column only gets ~62% of it (flex 16 of 26) next to the sidebar.
+  Widget _buildScreenshotGrid(
+    BuildContext context,
+    List<String> screenshots,
+    String title,
+  ) {
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final isDesktop = Breakpoints.isDesktop(context);
+    final columnWidth = isDesktop ? viewportWidth * 0.62 : viewportWidth;
+    final cols = columnWidth < 560 ? 1 : (columnWidth < 900 ? 2 : 3);
+    const spacing = 14.0;
+    final tileWidth = (columnWidth - spacing * (cols - 1)) / cols;
+    final tileHeight = tileWidth * 3 / 4;
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: List.generate(screenshots.length, (i) {
+        return SizedBox(
+          width: tileWidth,
+          height: tileHeight,
+          child: FadeSlideIn(
+            tag: 'screenshot-fade-$title-$i',
+            // Cascades in row-by-row instead of one big simultaneous pop —
+            // capped so a 19-screenshot gallery doesn't leave the last
+            // tile waiting nearly a second to appear.
+            delay: Duration(milliseconds: 30 * (i % 12)),
+            child: ScreenshotThumb(
+              url: screenshots[i],
+              semanticLabel: '$title screenshot ${i + 1}',
+              gallery: screenshots,
+              index: i,
             ),
           ),
         );
-      },
+      }),
     );
   }
 

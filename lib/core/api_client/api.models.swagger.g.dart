@@ -404,6 +404,7 @@ ProjectAppDto _$ProjectAppDtoFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           [],
+      videoUrl: json['videoUrl'] as String?,
     );
 
 Map<String, dynamic> _$ProjectAppDtoToJson(ProjectAppDto instance) =>
@@ -411,6 +412,7 @@ Map<String, dynamic> _$ProjectAppDtoToJson(ProjectAppDto instance) =>
       'label': instance.label,
       'platform': instance.platform,
       'screenshots': instance.screenshots,
+      'videoUrl': instance.videoUrl,
     };
 
 SubmitContactRequestModel _$SubmitContactRequestModelFromJson(

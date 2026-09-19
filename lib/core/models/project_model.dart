@@ -22,11 +22,31 @@ class ProjectApp {
   final String platform;
   final List<String> screenshots;
 
+  /// This app's own demo video, distinct from [ProjectModel.videoUrl] — a
+  /// multi-app project (e.g. separate customer/driver apps) can have a
+  /// different demo per app.
+  final String? videoUrl;
+
   ProjectApp({
     required this.label,
     required this.platform,
     this.screenshots = const [],
+    this.videoUrl,
   });
+
+  ProjectApp copyWith({
+    String? label,
+    String? platform,
+    List<String>? screenshots,
+    String? videoUrl,
+  }) {
+    return ProjectApp(
+      label: label ?? this.label,
+      platform: platform ?? this.platform,
+      screenshots: screenshots ?? this.screenshots,
+      videoUrl: videoUrl ?? this.videoUrl,
+    );
+  }
 }
 
 class ProjectModel {

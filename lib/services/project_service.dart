@@ -70,6 +70,7 @@ class ProjectService extends GetxService {
               label: a.label ?? '',
               platform: a.platform ?? '',
               screenshots: a.screenshots ?? const [],
+              videoUrl: a.videoUrl,
             ),
           )
           .toList(),
@@ -120,6 +121,7 @@ class ProjectService extends GetxService {
               label: a.label,
               platform: a.platform,
               screenshots: a.screenshots,
+              videoUrl: a.videoUrl,
             ),
           )
           .toList(),
@@ -175,6 +177,7 @@ class ProjectService extends GetxService {
               label: a.label,
               platform: a.platform,
               screenshots: a.screenshots,
+              videoUrl: a.videoUrl,
             ),
           )
           .toList(),

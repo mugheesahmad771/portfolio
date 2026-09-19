@@ -38,6 +38,7 @@ class StatRow {
 class AppRow {
   final TextEditingController label;
   final TextEditingController screenshots;
+  final TextEditingController videoUrl;
   final TextEditingController manualUrlController = TextEditingController();
   String platform;
   bool isUploadingScreenshots;
@@ -46,13 +47,16 @@ class AppRow {
     String label = '',
     this.platform = 'Web',
     String screenshots = '',
+    String videoUrl = '',
     this.isUploadingScreenshots = false,
     this.showManualInput = false,
   }) : label = TextEditingController(text: label),
-       screenshots = TextEditingController(text: screenshots);
+       screenshots = TextEditingController(text: screenshots),
+       videoUrl = TextEditingController(text: videoUrl);
   void dispose() {
     label.dispose();
     screenshots.dispose();
+    videoUrl.dispose();
     manualUrlController.dispose();
   }
 }
@@ -196,6 +200,7 @@ class ProjectFormViewModel extends GetxController {
                 label: a.label,
                 platform: a.platform,
                 screenshots: a.screenshots.join('\n'),
+                videoUrl: a.videoUrl ?? '',
               ),
             )
             .toList();
@@ -458,6 +463,9 @@ class ProjectFormViewModel extends GetxController {
                 label: a.label.text.trim(),
                 platform: a.platform,
                 screenshots: _splitLines(a.screenshots.text),
+                videoUrl: a.videoUrl.text.trim().isEmpty
+                    ? null
+                    : a.videoUrl.text.trim(),
               ),
             )
             .where((a) => a.label.isNotEmpty)

@@ -1217,6 +1217,12 @@ class ProjectFormPage extends StatelessWidget {
                       ],
                     ),
                   ],
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    controller: row.videoUrl,
+                    label: 'Demo video URL (optional)',
+                    hint: 'https://youtube.com/watch?v=... for this app',
+                  ),
                 ],
               ),
             );

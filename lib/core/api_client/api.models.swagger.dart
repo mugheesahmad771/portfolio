@@ -1735,7 +1735,12 @@ extension $ProjectStatisticDtoExtension on ProjectStatisticDto {
 
 @JsonSerializable(explicitToJson: true)
 class ProjectAppDto {
-  const ProjectAppDto({this.label, this.platform, this.screenshots});
+  const ProjectAppDto({
+    this.label,
+    this.platform,
+    this.screenshots,
+    this.videoUrl,
+  });
 
   factory ProjectAppDto.fromJson(Map<String, dynamic> json) =>
       _$ProjectAppDtoFromJson(json);
@@ -1749,6 +1754,8 @@ class ProjectAppDto {
   final String? platform;
   @JsonKey(name: 'screenshots', defaultValue: <String>[])
   final List<String>? screenshots;
+  @JsonKey(name: 'videoUrl')
+  final String? videoUrl;
   static const fromJsonFactory = _$ProjectAppDtoFromJson;
 
   @override
@@ -1766,6 +1773,11 @@ class ProjectAppDto {
                 const DeepCollectionEquality().equals(
                   other.screenshots,
                   screenshots,
+                )) &&
+            (identical(other.videoUrl, videoUrl) ||
+                const DeepCollectionEquality().equals(
+                  other.videoUrl,
+                  videoUrl,
                 )));
   }
 
@@ -1777,6 +1789,7 @@ class ProjectAppDto {
       const DeepCollectionEquality().hash(label) ^
       const DeepCollectionEquality().hash(platform) ^
       const DeepCollectionEquality().hash(screenshots) ^
+      const DeepCollectionEquality().hash(videoUrl) ^
       runtimeType.hashCode;
 }
 
@@ -1785,11 +1798,13 @@ extension $ProjectAppDtoExtension on ProjectAppDto {
     String? label,
     String? platform,
     List<String>? screenshots,
+    String? videoUrl,
   }) {
     return ProjectAppDto(
       label: label ?? this.label,
       platform: platform ?? this.platform,
       screenshots: screenshots ?? this.screenshots,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 
@@ -1797,6 +1812,7 @@ extension $ProjectAppDtoExtension on ProjectAppDto {
     Wrapped<String?>? label,
     Wrapped<String?>? platform,
     Wrapped<List<String>?>? screenshots,
+    Wrapped<String?>? videoUrl,
   }) {
     return ProjectAppDto(
       label: (label != null ? label.value : this.label),
@@ -1804,6 +1820,7 @@ extension $ProjectAppDtoExtension on ProjectAppDto {
       screenshots: (screenshots != null
           ? screenshots.value
           : this.screenshots),
+      videoUrl: (videoUrl != null ? videoUrl.value : this.videoUrl),
     );
   }
 }
