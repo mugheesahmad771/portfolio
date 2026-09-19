@@ -141,39 +141,38 @@ class MyApp extends StatelessWidget {
             page: () => const AppLayout(child: ResumePage()),
             transition: Transition.fadeIn,
           ),
-          // Admin pages - no layout wrapper. Blocked entirely in production
-          // (see ProductionGuardMiddleware); the form pages additionally
-          // require an active login (see AuthGuardMiddleware) since the
+          // Admin pages - no layout wrapper. Reachable on the live production
+          // site now that it has a real backend to talk to; the form pages
+          // still require an active login (see AuthGuardMiddleware) since the
           // dashboard itself is the only one that renders a login form.
           GetPage(
             name: AppRoute.admin,
             page: () => const AdminDashboardPage(),
             transition: Transition.fadeIn,
-            middlewares: [ProductionGuardMiddleware()],
           ),
           GetPage(
             name: AppRoute.projectForm,
             page: () => const ProjectFormPage(),
             transition: Transition.fadeIn,
-            middlewares: [ProductionGuardMiddleware(), AuthGuardMiddleware()],
+            middlewares: [AuthGuardMiddleware()],
           ),
           GetPage(
             name: AppRoute.projectFormEdit,
             page: () => const ProjectFormPage(),
             transition: Transition.fadeIn,
-            middlewares: [ProductionGuardMiddleware(), AuthGuardMiddleware()],
+            middlewares: [AuthGuardMiddleware()],
           ),
           GetPage(
             name: AppRoute.adminExperienceForm,
             page: () => const ExperienceFormPage(),
             transition: Transition.fadeIn,
-            middlewares: [ProductionGuardMiddleware(), AuthGuardMiddleware()],
+            middlewares: [AuthGuardMiddleware()],
           ),
           GetPage(
             name: AppRoute.adminExperienceFormEdit,
             page: () => const ExperienceFormPage(),
             transition: Transition.fadeIn,
-            middlewares: [ProductionGuardMiddleware(), AuthGuardMiddleware()],
+            middlewares: [AuthGuardMiddleware()],
           ),
         ],
       ),
