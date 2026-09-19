@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "portfolio",
+  // Pinned explicitly so CI (no local `wrangler login` session, just an API
+  // token) never has to guess which account to deploy to.
+  "account_id": "c9374c170e8943196185ecf83339a2d2",
   "compatibility_date": "2026-09-17",
   "observability": {
     "enabled": true
