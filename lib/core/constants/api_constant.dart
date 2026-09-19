@@ -6,6 +6,5 @@
 /// against a local dev backend, never on the live production site.
 const bool production = true;
 
-// TODO: point this at the real deployed backend once it's live.
 const String apiProdBase = 'https://portfolio-be-ehsu.onrender.com';
 const String apiDebugBase = 'http://localhost:5000';
