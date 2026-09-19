@@ -5,6 +5,7 @@ import 'package:portfolio/core/constants/app_color.dart';
 import 'package:portfolio/pages/project_form/viewmodel/project_form_viewmodel.dart';
 import 'package:portfolio/views/app_buttons.dart';
 import 'package:portfolio/views/app_forms.dart';
+import 'package:portfolio/views/image_lightbox.dart';
 import 'package:portfolio/views/responsive_layout.dart';
 
 class ProjectFormPage extends StatelessWidget {
@@ -231,29 +232,101 @@ class ProjectFormPage extends StatelessWidget {
                                   title: 'Media',
                                   children: [
                                     _imagePicker(
+                                      context,
                                       viewModel,
                                       label: 'Thumbnail',
                                       url: viewModel.thumbnail,
                                       isUploading:
                                           viewModel.isUploadingThumbnail,
                                       onPick: viewModel.pickThumbnail,
+                                      onRemove: viewModel.clearThumbnail,
                                     ),
                                     const SizedBox(height: 20),
                                     _imagePicker(
+                                      context,
                                       viewModel,
                                       label: 'Cover Image',
                                       url: viewModel.coverImage,
                                       isUploading: viewModel.isUploadingCover,
                                       onPick: viewModel.pickCoverImage,
+                                      onRemove: viewModel.clearCoverImage,
                                     ),
                                     const SizedBox(height: 16),
-                                    AppTextField(
-                                      controller:
-                                          viewModel.screenshotsController,
-                                      label: 'Screenshot URLs',
-                                      hint: 'One URL per line',
-                                      maxLines: 3,
+                                    Text(
+                                      'Screenshots',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.heading,
+                                      ),
                                     ),
+                                    const SizedBox(height: 8),
+                                    _screenshotGallery(
+                                      context,
+                                      _splitLines(
+                                        viewModel.screenshotsController.text,
+                                      ),
+                                      (url) => viewModel.removeScreenshot(
+                                        viewModel.screenshotsController,
+                                        url,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        AppButton(
+                                          label:
+                                              viewModel.isUploadingScreenshots
+                                              ? 'Uploading...'
+                                              : 'Upload Screenshots',
+                                          isPrimary: false,
+                                          isSmall: true,
+                                          isLoading:
+                                              viewModel.isUploadingScreenshots,
+                                          onPressed: viewModel.pickScreenshots,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        GestureDetector(
+                                          onTap: viewModel
+                                              .toggleScreenshotUrlInput,
+                                          child: Text(
+                                            viewModel.showScreenshotUrlInput
+                                                ? 'Cancel'
+                                                : '+ Add image URL',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (viewModel.showScreenshotUrlInput) ...[
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          Expanded(
+                                            child: AppTextField(
+                                              controller: viewModel
+                                                  .manualScreenshotUrlController,
+                                              label: 'Image URL',
+                                              hint:
+                                                  'https://... an already-hosted image',
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          AppButton(
+                                            label: 'Add',
+                                            isSmall: true,
+                                            onPressed: viewModel
+                                                .addManualScreenshotUrl,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                     const SizedBox(height: 6),
                                     const Text(
                                       'For a single-app project. If this '
@@ -290,7 +363,7 @@ class ProjectFormPage extends StatelessWidget {
                                       'different platforms to show both iOS '
                                       'and Android for one app. Leave empty '
                                       'for a single-app project.',
-                                  children: [_appsEditor(viewModel)],
+                                  children: [_appsEditor(context, viewModel)],
                                 ),
                                 const SizedBox(height: 20),
 
@@ -708,11 +781,13 @@ class ProjectFormPage extends StatelessWidget {
   }
 
   Widget _imagePicker(
+    BuildContext context,
     ProjectFormViewModel viewModel, {
     required String label,
     required String? url,
     required bool isUploading,
     required VoidCallback onPick,
+    required VoidCallback onRemove,
   }) {
     final hasImage = url != null && url.isNotEmpty;
     return Column(
@@ -730,30 +805,40 @@ class ProjectFormPage extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: hasImage ? AppColors.primary : AppColors.border,
+            GestureDetector(
+              onTap: hasImage
+                  ? () => ImageLightbox.showSingle(context, url)
+                  : null,
+              child: MouseRegion(
+                cursor: hasImage
+                    ? SystemMouseCursors.click
+                    : SystemMouseCursors.basic,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: hasImage ? AppColors.primary : AppColors.border,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: hasImage
+                      ? Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => const Icon(
+                            Icons.image_not_supported,
+                            color: AppColors.disabled,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.image_outlined,
+                          color: AppColors.disabled,
+                        ),
                 ),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: hasImage
-                  ? Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => const Icon(
-                        Icons.image_not_supported,
-                        color: AppColors.disabled,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.image_outlined,
-                      color: AppColors.disabled,
-                    ),
             ),
             const SizedBox(width: 16),
             Column(
@@ -771,13 +856,29 @@ class ProjectFormPage extends StatelessWidget {
                 ),
                 if (hasImage) ...[
                   const SizedBox(height: 6),
-                  Text(
-                    'Uploaded',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Uploaded',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: onRemove,
+                        child: const Text(
+                          'Remove',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -787,6 +888,88 @@ class ProjectFormPage extends StatelessWidget {
       ],
     );
   }
+
+  /// Small thumbnail + remove-button grid shown under a "Screenshot URLs"
+  /// field so already-added images can be removed individually instead of
+  /// hand-editing the raw newline-separated text.
+  Widget _screenshotGallery(
+    BuildContext context,
+    List<String> urls,
+    void Function(String) onRemove,
+  ) {
+    if (urls.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: urls.asMap().entries.map((entry) {
+          final index = entry.key;
+          final url = entry.value;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () => ImageLightbox.show(
+                  context,
+                  images: urls,
+                  initialIndex: index,
+                ),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.bg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const Icon(
+                        Icons.image_not_supported,
+                        size: 18,
+                        color: AppColors.disabled,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -6,
+                right: -6,
+                child: GestureDetector(
+                  onTap: () => onRemove(url),
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: AppColors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 13,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  List<String> _splitLines(String text) => text
+      .split('\n')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
 
   Widget _linksEditor(ProjectFormViewModel viewModel) {
     return Obx(
@@ -885,7 +1068,7 @@ class ProjectFormPage extends StatelessWidget {
     );
   }
 
-  Widget _appsEditor(ProjectFormViewModel viewModel) {
+  Widget _appsEditor(BuildContext context, ProjectFormViewModel viewModel) {
     return Obx(
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -972,12 +1155,68 @@ class ProjectFormPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  AppTextField(
-                    controller: row.screenshots,
-                    label: 'Screenshot URLs',
-                    hint: 'One URL per line',
-                    maxLines: 3,
+                  const Text(
+                    'Screenshots',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.heading,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  _screenshotGallery(
+                    context,
+                    _splitLines(row.screenshots.text),
+                    (url) => viewModel.removeAppScreenshot(i, url),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      AppButton(
+                        label: row.isUploadingScreenshots
+                            ? 'Uploading...'
+                            : 'Upload Screenshots',
+                        isPrimary: false,
+                        isSmall: true,
+                        isLoading: row.isUploadingScreenshots,
+                        onPressed: () => viewModel.pickAppScreenshots(i),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () => viewModel.toggleAppManualInput(i),
+                        child: Text(
+                          row.showManualInput ? 'Cancel' : '+ Add image URL',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (row.showManualInput) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            controller: row.manualUrlController,
+                            label: 'Image URL',
+                            hint: 'https://... an already-hosted image',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AppButton(
+                          label: 'Add',
+                          isSmall: true,
+                          onPressed: () =>
+                              viewModel.addAppManualScreenshotUrl(i),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             );

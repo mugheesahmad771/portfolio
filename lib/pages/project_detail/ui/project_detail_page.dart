@@ -11,6 +11,7 @@ import 'package:portfolio/views/app_badge.dart';
 import 'package:portfolio/views/app_project_card.dart';
 import 'package:portfolio/views/app_section_header.dart';
 import 'package:portfolio/views/app_tech_chip.dart';
+import 'package:portfolio/views/image_lightbox.dart';
 import 'package:portfolio/views/project_media_fallback.dart';
 import 'package:portfolio/views/responsive_layout.dart';
 import 'package:portfolio/views/scroll_reveal.dart';
@@ -132,7 +133,7 @@ class ProjectDetailPage extends StatelessWidget {
               const SizedBox(height: 32),
               ScrollReveal(
                 id: 'project-cover-${project.id}',
-                child: _buildCoverOrMetrics(project),
+                child: _buildCoverOrMetrics(context, project),
               ),
               const SizedBox(height: 40),
               isDesktop
@@ -140,7 +141,10 @@ class ProjectDetailPage extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(flex: 16, child: _buildMainColumn(project)),
+                          Expanded(
+                            flex: 16,
+                            child: _buildMainColumn(context, project),
+                          ),
                           const SizedBox(width: 40),
                           Expanded(flex: 10, child: _buildSidebar(project)),
                         ],
@@ -149,7 +153,7 @@ class ProjectDetailPage extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildMainColumn(project),
+                        _buildMainColumn(context, project),
                         const SizedBox(height: 32),
                         _buildSidebar(project),
                       ],
@@ -274,10 +278,10 @@ class ProjectDetailPage extends StatelessWidget {
     return Wrap(spacing: 12, runSpacing: 12, children: links);
   }
 
-  Widget _buildCoverOrMetrics(ProjectModel project) {
+  Widget _buildCoverOrMetrics(BuildContext context, ProjectModel project) {
     final showCover =
         project.canShowScreenshots && (project.coverImage?.isNotEmpty ?? false);
-    return ClipRRect(
+    final cover = ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: AspectRatio(
         aspectRatio: 16 / 9,
@@ -292,9 +296,18 @@ class ProjectDetailPage extends StatelessWidget {
             : ProjectMediaFallback(project: project),
       ),
     );
+    if (!showCover) return cover;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () =>
+            ImageLightbox.showSingle(context, project.coverImage!),
+        child: cover,
+      ),
+    );
   }
 
-  Widget _buildMainColumn(ProjectModel project) {
+  Widget _buildMainColumn(BuildContext context, ProjectModel project) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,14 +438,25 @@ class ProjectDetailPage extends StatelessWidget {
                       // itself against.
                       itemBuilder: (context, i) => SizedBox(
                         width: 160,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            app.screenshots[i],
-                            fit: BoxFit.cover,
-                            semanticLabel:
-                                '${app.label} ${app.platform} screenshot ${i + 1}',
-                            errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => ImageLightbox.show(
+                              context,
+                              images: app.screenshots,
+                              initialIndex: i,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                app.screenshots[i],
+                                fit: BoxFit.cover,
+                                semanticLabel:
+                                    '${app.label} ${app.platform} screenshot ${i + 1}',
+                                errorBuilder: (c, e, s) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -460,12 +484,22 @@ class ProjectDetailPage extends StatelessWidget {
             childAspectRatio: 4 / 3,
           ),
           itemCount: screenshots.length,
-          itemBuilder: (context, i) => ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              screenshots[i],
-              fit: BoxFit.cover,
-              semanticLabel: '$title screenshot ${i + 1}',
+          itemBuilder: (context, i) => MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => ImageLightbox.show(
+                context,
+                images: screenshots,
+                initialIndex: i,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  screenshots[i],
+                  fit: BoxFit.cover,
+                  semanticLabel: '$title screenshot ${i + 1}',
+                ),
+              ),
             ),
           ),
         );

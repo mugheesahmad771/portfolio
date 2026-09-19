@@ -8,6 +8,7 @@ import 'package:portfolio/core/constants/app_route.dart';
 import 'package:portfolio/core/constants/route_meta.dart';
 import 'package:portfolio/core/middleware/admin_guard_middleware.dart';
 import 'package:portfolio/core/utils/page_meta.dart';
+import 'package:portfolio/services/audit_log_service.dart';
 import 'package:portfolio/services/auth_service.dart';
 import 'package:portfolio/services/contact_service.dart';
 import 'package:portfolio/services/experience_service.dart';
@@ -42,6 +43,7 @@ void main() async {
   Get.put<ProjectService>(ProjectService());
   Get.put<ExperienceService>(ExperienceService());
   Get.put<ContactService>(ContactService());
+  Get.put<AuditLogService>(AuditLogService());
   await Get.find<AuthService>().restoreSession();
 
   runApp(const MyApp());

@@ -1,6 +1,12 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:portfolio/core/api_client/client_index.dart';
 import 'package:portfolio/core/api_client/main_client.dart';
+import 'package:portfolio/core/constants/api_constant.dart';
+import 'package:portfolio/core/global/global_helpers.dart';
 import 'package:portfolio/core/models/project_model.dart';
 
 /// API-backed, singleton (via [GetxService]) project data source, talking
@@ -221,13 +227,112 @@ class ProjectService extends GetxService {
     );
   }
 
-  /// Uploads an image (thumbnail/cover) and returns its served URL.
+  /// Uploads an image (thumbnail/cover/screenshot) and returns its served
+  /// URL.
+  ///
+  /// Hand-rolled with `package:http` rather than the generated
+  /// [mainClient.apiUploadsPost] — Chopper's `@PartFile()` handling for a
+  /// raw `List<int>` builds the multipart part via
+  /// `MultipartFile.fromBytes(field, bytes)` with no `filename`, so the
+  /// backend's `UploadsController` (which derives the allowed-extension
+  /// check from `IFormFile.FileName`) always saw an empty filename and
+  /// rejected every upload with "Only png, jpg, jpeg, webp and gif images
+  /// are allowed." This builds the multipart request directly so the real
+  /// filename and content type are actually sent.
   Future<String> uploadImage(String filename, List<int> bytes) async {
-    final response = await mainClient.apiUploadsPost(file: bytes);
-    final data = response.body as Map;
-    // The backend now stores uploads in Cloudflare R2 and returns the full
+    var response = await _sendUpload(filename, bytes);
+
+    // This bypasses mainClient/AuthInterceptor entirely (see class doc
+    // above), so it also bypasses their automatic silent-refresh-on-401 —
+    // without this, an access token that expired while the admin form was
+    // sitting open would fail every upload with no retry, unlike every
+    // other authenticated call in the app.
+    if (response.statusCode == 401 && await _tryRefreshToken()) {
+      response = await _sendUpload(filename, bytes);
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_extractErrorMessage(response), response.statusCode);
+    }
+
+    // The backend stores uploads in Cloudflare R2 and returns the full
     // public URL directly (e.g. "https://pub-xxxx.r2.dev/xyz.png") — no
-    // origin resolution needed, unlike the old local-disk/relative-path setup.
+    // origin resolution needed.
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['url'] as String;
+  }
+
+  Future<http.Response> _sendUpload(String filename, List<int> bytes) async {
+    final baseUrl = production ? apiProdBase : apiDebugBase;
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/Uploads'),
+    )
+      ..headers['Authorization'] = 'Bearer ${sessionHelper.accessToken ?? ''}'
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: _imageContentType(filename),
+        ),
+      );
+
+    final streamed = await request.send();
+    return http.Response.fromStream(streamed);
+  }
+
+  /// Mirrors [MyAuthenticator]'s refresh call (main_client.dart) — that one
+  /// isn't reusable here since it's private to that library and wired
+  /// through chopper's Authenticator interface, which this hand-rolled
+  /// request doesn't go through.
+  Future<bool> _tryRefreshToken() async {
+    final refreshToken = sessionHelper.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    final baseUrl = production ? apiProdBase : apiDebugBase;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/Auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return false;
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final newAccessToken = data['token'] as String?;
+      final newRefreshToken = data['refreshToken'] as String?;
+      if (newAccessToken == null || newAccessToken.isEmpty) return false;
+
+      await sessionHelper.setAccessToken(newAccessToken);
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        await sessionHelper.setRefreshToken(newRefreshToken);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  MediaType _imageContentType(String filename) {
+    final ext = filename.toLowerCase();
+    if (ext.endsWith('.png')) return MediaType('image', 'png');
+    if (ext.endsWith('.jpg') || ext.endsWith('.jpeg')) {
+      return MediaType('image', 'jpeg');
+    }
+    if (ext.endsWith('.webp')) return MediaType('image', 'webp');
+    if (ext.endsWith('.gif')) return MediaType('image', 'gif');
+    return MediaType('application', 'octet-stream');
+  }
+
+  String _extractErrorMessage(http.Response response) {
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (body['message'] is String) return body['message'] as String;
+    } catch (_) {
+      // Not JSON, or not the shape we expect — fall through to the default.
+    }
+    return 'Upload failed (${response.statusCode}).';
   }
 }

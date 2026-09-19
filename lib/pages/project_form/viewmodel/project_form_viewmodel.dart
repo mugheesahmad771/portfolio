@@ -38,13 +38,22 @@ class StatRow {
 class AppRow {
   final TextEditingController label;
   final TextEditingController screenshots;
+  final TextEditingController manualUrlController = TextEditingController();
   String platform;
-  AppRow({String label = '', this.platform = 'Web', String screenshots = ''})
-    : label = TextEditingController(text: label),
-      screenshots = TextEditingController(text: screenshots);
+  bool isUploadingScreenshots;
+  bool showManualInput;
+  AppRow({
+    String label = '',
+    this.platform = 'Web',
+    String screenshots = '',
+    this.isUploadingScreenshots = false,
+    this.showManualInput = false,
+  }) : label = TextEditingController(text: label),
+       screenshots = TextEditingController(text: screenshots);
   void dispose() {
     label.dispose();
     screenshots.dispose();
+    manualUrlController.dispose();
   }
 }
 
@@ -77,6 +86,7 @@ class ProjectFormViewModel extends GetxController {
   final keyFeaturesController = TextEditingController();
   final technologiesController = TextEditingController();
   final screenshotsController = TextEditingController();
+  final manualScreenshotUrlController = TextEditingController();
   final githubLinkController = TextEditingController();
   final liveLinkController = TextEditingController();
   final playStoreUrlController = TextEditingController();
@@ -96,6 +106,8 @@ class ProjectFormViewModel extends GetxController {
   final _coverImage = Rxn<String>();
   final _isUploadingThumbnail = false.obs;
   final _isUploadingCover = false.obs;
+  final _isUploadingScreenshots = false.obs;
+  final _showScreenshotUrlInput = false.obs;
 
   final links = <LinkRow>[].obs;
   final stats = <StatRow>[].obs;
@@ -118,6 +130,8 @@ class ProjectFormViewModel extends GetxController {
   String? get coverImage => _coverImage.value;
   bool get isUploadingThumbnail => _isUploadingThumbnail.value;
   bool get isUploadingCover => _isUploadingCover.value;
+  bool get isUploadingScreenshots => _isUploadingScreenshots.value;
+  bool get showScreenshotUrlInput => _showScreenshotUrlInput.value;
   bool get isLoading => _isLoading.value;
   bool get isSaving => _isSaving.value;
   String get errorMessage => _errorMessage.value;
@@ -237,6 +251,69 @@ class ProjectFormViewModel extends GetxController {
   Future<void> pickThumbnail() => _pickAndUpload(isThumbnail: true);
   Future<void> pickCoverImage() => _pickAndUpload(isThumbnail: false);
 
+  // Only clears the field locally — the file itself isn't deleted from R2
+  // here. If this project is saved without it (and nothing else references
+  // it), OrphanedUploadCleanupService removes the actual file from storage
+  // within 24 hours. Deleting it immediately on click would be unsafe: the
+  // admin might navigate away without saving, which would orphan a live
+  // project's image while the DB still points at it.
+  void clearThumbnail() {
+    _thumbnail.value = null;
+    update();
+  }
+
+  void clearCoverImage() {
+    _coverImage.value = null;
+    update();
+  }
+
+  void removeScreenshot(TextEditingController controller, String url) {
+    final urls = _splitLines(controller.text)..remove(url);
+    controller.text = urls.join('\n');
+    update();
+  }
+
+  void removeAppScreenshot(int index, String url) {
+    final urls = _splitLines(apps[index].screenshots.text)..remove(url);
+    apps[index].screenshots.text = urls.join('\n');
+    apps.refresh();
+  }
+
+  /// Reveals/hides the single-line "paste an existing URL" field — kept
+  /// separate from the Upload button so it's clear the button is for
+  /// picking a file and this is only for an image already hosted elsewhere.
+  void toggleScreenshotUrlInput() {
+    _showScreenshotUrlInput.value = !_showScreenshotUrlInput.value;
+    if (!_showScreenshotUrlInput.value) manualScreenshotUrlController.clear();
+    update();
+  }
+
+  void addManualScreenshotUrl() {
+    final url = manualScreenshotUrlController.text.trim();
+    if (url.isEmpty) return;
+    final urls = _splitLines(screenshotsController.text)..add(url);
+    screenshotsController.text = urls.join('\n');
+    manualScreenshotUrlController.clear();
+    _showScreenshotUrlInput.value = false;
+    update();
+  }
+
+  void toggleAppManualInput(int index) {
+    apps[index].showManualInput = !apps[index].showManualInput;
+    if (!apps[index].showManualInput) apps[index].manualUrlController.clear();
+    apps.refresh();
+  }
+
+  void addAppManualScreenshotUrl(int index) {
+    final url = apps[index].manualUrlController.text.trim();
+    if (url.isEmpty) return;
+    final urls = _splitLines(apps[index].screenshots.text)..add(url);
+    apps[index].screenshots.text = urls.join('\n');
+    apps[index].manualUrlController.clear();
+    apps[index].showManualInput = false;
+    apps.refresh();
+  }
+
   Future<void> _pickAndUpload({required bool isThumbnail}) async {
     final files = await FilePicker.pickFiles(type: FileType.image);
     if (files.isEmpty) return;
@@ -256,12 +333,61 @@ class ProjectFormViewModel extends GetxController {
       } else {
         _coverImage.value = url;
       }
-    } catch (_) {
-      _errorMessage.value = 'Image upload failed. Please try again.';
+    } catch (e) {
+      _errorMessage.value = 'Image upload failed: $e';
     }
     _isUploadingThumbnail.value = false;
     _isUploadingCover.value = false;
     update();
+  }
+
+  /// Uploads already-picked [files] and appends their URLs as new lines to
+  /// [controller], preserving whatever's already typed/pasted there.
+  Future<void> _uploadAndAppendScreenshots(
+    List<PlatformFile> files,
+    TextEditingController controller,
+  ) async {
+    final urls = <String>[];
+    for (final file in files) {
+      final bytes = await file.readAsBytes();
+      urls.add(await _projectService.uploadImage(file.name, bytes));
+    }
+
+    final existing = _splitLines(controller.text);
+    controller.text = [...existing, ...urls].join('\n');
+  }
+
+  Future<void> pickScreenshots() async {
+    // Pick before flipping the loading flag — the OS file dialog can stay
+    // open indefinitely, and we don't want the button showing "Uploading..."
+    // while the user hasn't even chosen a file yet.
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isEmpty) return;
+
+    _isUploadingScreenshots.value = true;
+    update();
+    try {
+      await _uploadAndAppendScreenshots(files, screenshotsController);
+    } catch (e) {
+      _errorMessage.value = 'Screenshot upload failed: $e';
+    }
+    _isUploadingScreenshots.value = false;
+    update();
+  }
+
+  Future<void> pickAppScreenshots(int index) async {
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isEmpty) return;
+
+    apps[index].isUploadingScreenshots = true;
+    apps.refresh();
+    try {
+      await _uploadAndAppendScreenshots(files, apps[index].screenshots);
+    } catch (e) {
+      _errorMessage.value = 'Screenshot upload failed: $e';
+    }
+    apps[index].isUploadingScreenshots = false;
+    apps.refresh();
   }
 
   Future<bool> save() async {
@@ -378,6 +504,7 @@ class ProjectFormViewModel extends GetxController {
       keyFeaturesController,
       technologiesController,
       screenshotsController,
+      manualScreenshotUrlController,
       githubLinkController,
       liveLinkController,
       playStoreUrlController,

@@ -1,20 +1,23 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:portfolio/core/api_client/main_client.dart';
+import 'package:portfolio/core/models/audit_log_model.dart';
 import 'package:portfolio/core/models/experience_model.dart';
 import 'package:portfolio/core/models/project_model.dart';
+import 'package:portfolio/services/audit_log_service.dart';
 import 'package:portfolio/services/auth_service.dart';
 import 'package:portfolio/services/contact_service.dart';
 import 'package:portfolio/services/experience_service.dart';
 import 'package:portfolio/services/project_service.dart';
 
-enum AdminTab { projects, experience, messages }
+enum AdminTab { projects, experience, messages, auditLog }
 
 class AdminViewModel extends GetxController {
   final AuthService authService = Get.find<AuthService>();
   final ProjectService projectService = Get.find<ProjectService>();
   final ExperienceService experienceService = Get.find<ExperienceService>();
   final ContactService contactService = Get.find<ContactService>();
+  final AuditLogService auditLogService = Get.find<AuditLogService>();
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -28,6 +31,7 @@ class AdminViewModel extends GetxController {
   final _projects = <ProjectModel>[].obs;
   final _experiences = <ExperienceModel>[].obs;
   final _messages = <Map<String, dynamic>>[].obs;
+  final _auditLogs = <AuditLogModel>[].obs;
   final _tab = AdminTab.projects.obs;
   final _isLoading = false.obs;
   final _isLoggingIn = false.obs;
@@ -38,6 +42,7 @@ class AdminViewModel extends GetxController {
   List<ProjectModel> get projects => _projects;
   List<ExperienceModel> get experiences => _experiences;
   List<Map<String, dynamic>> get messages => _messages;
+  List<AuditLogModel> get auditLogs => _auditLogs;
   AdminTab get tab => _tab.value;
   bool get isLoading => _isLoading.value;
   bool get isLoggingIn => _isLoggingIn.value;
@@ -54,6 +59,7 @@ class AdminViewModel extends GetxController {
   void setTab(AdminTab value) {
     _tab.value = value;
     if (value == AdminTab.messages && _messages.isEmpty) _loadMessages();
+    if (value == AdminTab.auditLog && _auditLogs.isEmpty) _loadAuditLogs();
     update();
   }
 
@@ -96,6 +102,15 @@ class AdminViewModel extends GetxController {
     } catch (_) {
       _messages.value = [];
     }
+  }
+
+  Future<void> _loadAuditLogs() async {
+    try {
+      _auditLogs.value = await auditLogService.getAll();
+    } catch (_) {
+      _auditLogs.value = [];
+    }
+    update();
   }
 
   Future<void> deleteProject(String id) async {
@@ -160,6 +175,7 @@ class AdminViewModel extends GetxController {
       _projects.clear();
       _experiences.clear();
       _messages.clear();
+      _auditLogs.clear();
       emailController.clear();
       passwordController.clear();
       currentPasswordController.clear();
@@ -183,6 +199,7 @@ class AdminViewModel extends GetxController {
     _projects.clear();
     _experiences.clear();
     _messages.clear();
+    _auditLogs.clear();
     emailController.clear();
     passwordController.clear();
     update();

@@ -255,6 +255,7 @@ class AdminDashboardPage extends StatelessWidget {
                     AdminTab.projects => _buildProjectsTab(viewModel),
                     AdminTab.experience => _buildExperienceTab(viewModel),
                     AdminTab.messages => _buildMessagesTab(viewModel),
+                    AdminTab.auditLog => _buildAuditLogTab(viewModel),
                   },
                 ),
         ),
@@ -285,6 +286,12 @@ class AdminDashboardPage extends StatelessWidget {
             AdminTab.messages,
             'Messages',
             Icons.mail_outline,
+          ),
+          _tabButton(
+            viewModel,
+            AdminTab.auditLog,
+            'Audit Log',
+            Icons.history,
           ),
         ],
       ),
@@ -781,6 +788,91 @@ class AdminDashboardPage extends StatelessWidget {
                         color: AppColors.body,
                       ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAuditLogTab(AdminViewModel viewModel) {
+    final fmt = DateFormat('MMM d, yyyy · h:mm a');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Audit Log',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.heading,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Logins, project changes and image uploads — most recent first.',
+          style: TextStyle(fontSize: 13, color: AppColors.muted),
+        ),
+        const SizedBox(height: 24),
+        if (viewModel.auditLogs.isEmpty)
+          const EmptyState(
+            icon: Icons.history,
+            message: 'No activity recorded yet.',
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: viewModel.auditLogs.length,
+            itemBuilder: (context, index) {
+              final log = viewModel.auditLogs[index];
+              return _AdminCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          log.action,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.heading,
+                          ),
+                        ),
+                        Text(
+                          fmt.format(log.createdDate),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (log.entityType != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${log.entityType}'
+                        '${log.entityId != null ? ' #${log.entityId}' : ''}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                    if (log.details != null && log.details!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        log.details!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.body,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/constants/app_color.dart';
 
-class AppTextField extends StatelessWidget {
+class AppTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final String hint;
@@ -24,6 +24,13 @@ class AppTextField extends StatelessWidget {
   });
 
   @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  late bool _obscured = widget.obscureText;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,14 +38,14 @@ class AppTextField extends StatelessWidget {
         Row(
           children: [
             Text(
-              label,
+              widget.label,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.heading,
               ),
             ),
-            if (isRequired)
+            if (widget.isRequired)
               const Text(
                 ' *',
                 style: TextStyle(color: AppColors.red, fontSize: 14),
@@ -47,12 +54,12 @@ class AppTextField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: inputType,
-          obscureText: obscureText,
+          controller: widget.controller,
+          maxLines: widget.obscureText ? 1 : widget.maxLines,
+          keyboardType: widget.inputType,
+          obscureText: widget.obscureText && _obscured,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: widget.hint,
             hintStyle: const TextStyle(color: AppColors.disabled),
             filled: true,
             fillColor: AppColors.card,
@@ -76,12 +83,25 @@ class AppTextField extends StatelessWidget {
               horizontal: 12,
               vertical: 12,
             ),
+            suffixIcon: widget.obscureText
+                ? IconButton(
+                    icon: Icon(
+                      _obscured
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppColors.disabled,
+                      size: 20,
+                    ),
+                    tooltip: _obscured ? 'Show password' : 'Hide password',
+                    onPressed: () => setState(() => _obscured = !_obscured),
+                  )
+                : null,
           ),
           style: const TextStyle(color: AppColors.title),
           validator:
-              validator ??
+              widget.validator ??
               (value) {
-                if (isRequired && (value?.isEmpty ?? true)) {
+                if (widget.isRequired && (value?.isEmpty ?? true)) {
                   return 'This field is required';
                 }
                 return null;
