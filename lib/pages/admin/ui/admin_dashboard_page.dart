@@ -249,14 +249,24 @@ class AdminDashboardPage extends StatelessWidget {
                     ),
                   ),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: switch (viewModel.tab) {
-                    AdminTab.projects => _buildProjectsTab(viewModel),
-                    AdminTab.experience => _buildExperienceTab(viewModel),
-                    AdminTab.messages => _buildMessagesTab(viewModel),
-                    AdminTab.auditLog => _buildAuditLogTab(viewModel),
-                  },
+              : RefreshIndicator(
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.card,
+                  onRefresh: viewModel.refreshCurrentTab,
+                  child: SingleChildScrollView(
+                    // Pull-to-refresh needs room to overscroll even when a
+                    // tab's content is shorter than the viewport (e.g. an
+                    // empty-state tab) — the default physics only allow
+                    // that once content already overflows.
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: switch (viewModel.tab) {
+                      AdminTab.projects => _buildProjectsTab(viewModel),
+                      AdminTab.experience => _buildExperienceTab(viewModel),
+                      AdminTab.messages => _buildMessagesTab(viewModel),
+                      AdminTab.auditLog => _buildAuditLogTab(viewModel),
+                    },
+                  ),
                 ),
         ),
       ],
@@ -388,6 +398,40 @@ class AdminDashboardPage extends StatelessWidget {
               viewModel.isSyncingSeed
                   ? 'Syncing...'
                   : 'Sync Seed Projects',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.muted,
+              side: const BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: viewModel.isSyncingImages
+                ? null
+                : () => _syncProjectImages(viewModel),
+            icon: viewModel.isSyncingImages
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.muted,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.image_outlined, size: 18),
+            label: Text(
+              viewModel.isSyncingImages
+                  ? 'Syncing...'
+                  : 'Sync Missing Images',
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.muted,
@@ -640,6 +684,29 @@ class AdminDashboardPage extends StatelessWidget {
         added.isEmpty
             ? 'Every seed project is already in the database.'
             : 'Added ${added.length} project(s): ${added.join(', ')}',
+        duration: const Duration(seconds: 4),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Sync failed',
+        '$e',
+        duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  /// Backfills Thumbnail/CoverImage on existing projects from the seed data
+  /// wherever they're still missing or point at the old broken placeholder
+  /// host — the admin-facing trigger for a database seeded before real
+  /// project images existed.
+  Future<void> _syncProjectImages(AdminViewModel viewModel) async {
+    try {
+      final updated = await viewModel.syncProjectImages();
+      Get.snackbar(
+        updated.isEmpty ? 'Already up to date' : 'Synced',
+        updated.isEmpty
+            ? 'Every project already has an image.'
+            : 'Updated ${updated.length} project(s): ${updated.join(', ')}',
         duration: const Duration(seconds: 4),
       );
     } catch (e) {

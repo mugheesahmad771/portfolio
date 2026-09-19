@@ -249,6 +249,27 @@ class ProjectService extends GetxService {
         .toList();
   }
 
+  /// Backfills Thumbnail/CoverImage on existing rows from the seed data,
+  /// but only where the existing value is still missing or points at the
+  /// old never-working placeholder host — never overwrites a real
+  /// admin-uploaded image. Safe to call repeatedly.
+  Future<List<String>> syncProjectImages() async {
+    final baseUrl = production ? apiProdBase : apiDebugBase;
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/Projects/sync-images'),
+      headers: {'Authorization': 'Bearer ${sessionHelper.accessToken ?? ''}'},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_extractErrorMessage(response), response.statusCode);
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (data['updatedSlugs'] as List<dynamic>? ?? const [])
+        .map((e) => e as String)
+        .toList();
+  }
+
   Future<List<ProjectModel>> getFeatured() async {
     final response = await mainClient.apiProjectsGet(featured: true);
     return (response.body ?? const []).map(_fromDto).toList();

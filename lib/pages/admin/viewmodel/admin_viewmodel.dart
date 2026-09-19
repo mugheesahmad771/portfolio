@@ -48,6 +48,7 @@ class AdminViewModel extends GetxController {
   final _projectTotalCount = 0.obs;
   final _isProjectsRefreshing = false.obs;
   final _isSyncingSeed = false.obs;
+  final _isSyncingImages = false.obs;
   Timer? _projectSearchDebounce;
 
   List<ProjectModel> get projects => _projects;
@@ -66,6 +67,7 @@ class AdminViewModel extends GetxController {
       (_projectTotalCount.value / projectPageSize).ceil().clamp(1, 999999);
   bool get isProjectsRefreshing => _isProjectsRefreshing.value;
   bool get isSyncingSeed => _isSyncingSeed.value;
+  bool get isSyncingImages => _isSyncingImages.value;
 
   @override
   void onInit() {
@@ -171,6 +173,50 @@ class AdminViewModel extends GetxController {
       update();
     }
     return added;
+  }
+
+  /// Returns the slugs actually updated, so the caller can show what
+  /// happened (including the "nothing to update" case) rather than a
+  /// generic success toast.
+  Future<List<String>> syncProjectImages() async {
+    _isSyncingImages.value = true;
+    update();
+    List<String> updated = [];
+    try {
+      updated = await projectService.syncProjectImages();
+      if (updated.isNotEmpty) await _loadProjectsPage();
+    } finally {
+      _isSyncingImages.value = false;
+      update();
+    }
+    return updated;
+  }
+
+  /// Reloads whatever tab is currently open — the single entry point for
+  /// both the pull-to-refresh gesture (works the same via touch or mouse
+  /// drag, so it needs no per-platform branching) and any other "refresh
+  /// this" trigger that isn't specific to the Projects tab's own button.
+  Future<void> refreshCurrentTab() async {
+    switch (_tab.value) {
+      case AdminTab.projects:
+        await refreshProjects();
+        break;
+      case AdminTab.experience:
+        try {
+          _experiences.value = await experienceService.getAll();
+        } catch (_) {
+          // Keep whatever was already showing rather than clearing it.
+        }
+        update();
+        break;
+      case AdminTab.messages:
+        await _loadMessages();
+        update();
+        break;
+      case AdminTab.auditLog:
+        await _loadAuditLogs();
+        break;
+    }
   }
 
   Future<void> _loadMessages() async {
