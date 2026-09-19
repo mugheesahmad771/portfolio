@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:portfolio/core/api_client/main_client.dart';
@@ -27,6 +29,10 @@ class AdminViewModel extends GetxController {
   final TextEditingController newPasswordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
+  final TextEditingController projectSearchController =
+      TextEditingController();
+
+  static const int projectPageSize = 10;
 
   final _projects = <ProjectModel>[].obs;
   final _experiences = <ExperienceModel>[].obs;
@@ -38,6 +44,10 @@ class AdminViewModel extends GetxController {
   final _loginError = ''.obs;
   final _isChangingPassword = false.obs;
   final _changePasswordError = ''.obs;
+  final _projectPage = 1.obs;
+  final _projectTotalCount = 0.obs;
+  final _isProjectsRefreshing = false.obs;
+  Timer? _projectSearchDebounce;
 
   List<ProjectModel> get projects => _projects;
   List<ExperienceModel> get experiences => _experiences;
@@ -49,6 +59,11 @@ class AdminViewModel extends GetxController {
   String get loginError => _loginError.value;
   bool get isChangingPassword => _isChangingPassword.value;
   String get changePasswordError => _changePasswordError.value;
+  int get projectPage => _projectPage.value;
+  int get projectTotalCount => _projectTotalCount.value;
+  int get projectPageCount =>
+      (_projectTotalCount.value / projectPageSize).ceil().clamp(1, 999999);
+  bool get isProjectsRefreshing => _isProjectsRefreshing.value;
 
   @override
   void onInit() {
@@ -87,12 +102,55 @@ class AdminViewModel extends GetxController {
     _isLoading.value = true;
     update();
     try {
-      _projects.value = await projectService.getAll();
+      await _loadProjectsPage();
       _experiences.value = await experienceService.getAll();
     } catch (_) {
       // Leave lists empty; the panel still renders with empty-state UI.
     }
     _isLoading.value = false;
+    update();
+  }
+
+  Future<void> _loadProjectsPage() async {
+    final result = await projectService.getPage(
+      search: projectSearchController.text,
+      page: _projectPage.value,
+      pageSize: projectPageSize,
+    );
+    _projects.value = result.items;
+    _projectTotalCount.value = result.totalCount;
+  }
+
+  /// Debounced so a search box doesn't fire a request per keystroke.
+  void searchProjects(String query) {
+    _projectSearchDebounce?.cancel();
+    _projectSearchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _projectPage.value = 1;
+      _loadProjectsPage().then((_) => update());
+    });
+  }
+
+  void setProjectPage(int page) {
+    if (page < 1 || page > projectPageCount || page == _projectPage.value) {
+      return;
+    }
+    _projectPage.value = page;
+    _loadProjectsPage().then((_) => update());
+  }
+
+  /// Manual reload of the current page/search — a dedicated loading flag so
+  /// the refresh control can show its own spinner without blanking the
+  /// whole tab the way the initial [_isLoading] state does.
+  Future<void> refreshProjects() async {
+    _isProjectsRefreshing.value = true;
+    update();
+    try {
+      await _loadProjectsPage();
+    } catch (_) {
+      // Keep whatever was already showing rather than clearing it on a
+      // failed refresh.
+    }
+    _isProjectsRefreshing.value = false;
     update();
   }
 
@@ -115,7 +173,13 @@ class AdminViewModel extends GetxController {
 
   Future<void> deleteProject(String id) async {
     await projectService.delete(id);
-    _projects.value = await projectService.getAll();
+    // Deleting the last item on a page beyond the first would otherwise
+    // strand the view on a now-empty page.
+    if (_projects.length == 1 && _projectPage.value > 1) {
+      _projectPage.value -= 1;
+    }
+    await _loadProjectsPage();
+    update();
   }
 
   Future<void> toggleFeatured(String projectId) async {
@@ -123,7 +187,8 @@ class AdminViewModel extends GetxController {
     if (matches.isEmpty) return;
     final project = matches.first;
     await projectService.update(project.copyWith(featured: !project.featured));
-    _projects.value = await projectService.getAll();
+    await _loadProjectsPage();
+    update();
   }
 
   Future<void> deleteExperience(String id) async {
@@ -176,6 +241,9 @@ class AdminViewModel extends GetxController {
       _experiences.clear();
       _messages.clear();
       _auditLogs.clear();
+      _projectPage.value = 1;
+      _projectTotalCount.value = 0;
+      projectSearchController.clear();
       emailController.clear();
       passwordController.clear();
       currentPasswordController.clear();
@@ -200,6 +268,9 @@ class AdminViewModel extends GetxController {
     _experiences.clear();
     _messages.clear();
     _auditLogs.clear();
+    _projectPage.value = 1;
+    _projectTotalCount.value = 0;
+    projectSearchController.clear();
     emailController.clear();
     passwordController.clear();
     update();
@@ -207,11 +278,13 @@ class AdminViewModel extends GetxController {
 
   @override
   void onClose() {
+    _projectSearchDebounce?.cancel();
     emailController.dispose();
     passwordController.dispose();
     currentPasswordController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();
+    projectSearchController.dispose();
     super.onClose();
   }
 }

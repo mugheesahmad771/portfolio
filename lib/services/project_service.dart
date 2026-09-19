@@ -9,6 +9,12 @@ import 'package:portfolio/core/constants/api_constant.dart';
 import 'package:portfolio/core/global/global_helpers.dart';
 import 'package:portfolio/core/models/project_model.dart';
 
+class ProjectPageResult {
+  final List<ProjectModel> items;
+  final int totalCount;
+  const ProjectPageResult({required this.items, required this.totalCount});
+}
+
 /// API-backed, singleton (via [GetxService]) project data source, talking
 /// to the backend through the shared [mainClient] Chopper client.
 ///
@@ -178,6 +184,47 @@ class ProjectService extends GetxService {
   Future<List<ProjectModel>> getAll() async {
     final response = await mainClient.apiProjectsGet();
     return (response.body ?? const []).map(_fromDto).toList();
+  }
+
+  /// Searched, paginated project listing for the admin panel.
+  ///
+  /// Hand-rolled rather than through [mainClient] — the generated client's
+  /// `apiProjectsGet` was never regenerated with the `search`/`page`/
+  /// `pageSize` query params the backend actually supports (see
+  /// [uploadImage] for why a manual codegen run is avoided here), and it
+  /// also can't reach the `X-Total-Count` response header the pagination
+  /// UI needs to know how many pages exist.
+  Future<ProjectPageResult> getPage({
+    String? search,
+    int page = 1,
+    int pageSize = 10,
+    bool? featured,
+  }) async {
+    final baseUrl = production ? apiProdBase : apiDebugBase;
+    final uri = Uri.parse('$baseUrl/api/Projects').replace(
+      queryParameters: {
+        'page': '$page',
+        'pageSize': '$pageSize',
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (featured != null) 'featured': '$featured',
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer ${sessionHelper.accessToken ?? ''}'},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_extractErrorMessage(response), response.statusCode);
+    }
+
+    final items = (jsonDecode(response.body) as List<dynamic>)
+        .map((e) => _fromDto(ProjectDto.fromJson(e as Map<String, dynamic>)))
+        .toList();
+    final totalCount =
+        int.tryParse(response.headers['x-total-count'] ?? '') ?? items.length;
+    return ProjectPageResult(items: items, totalCount: totalCount);
   }
 
   Future<List<ProjectModel>> getFeatured() async {

@@ -365,11 +365,53 @@ class AdminDashboardPage extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: viewModel.projectSearchController,
+                onChanged: viewModel.searchProjects,
+                decoration: InputDecoration(
+                  hintText: 'Search by title, slug or company...',
+                  hintStyle: const TextStyle(color: AppColors.disabled),
+                  filled: true,
+                  fillColor: AppColors.card,
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.muted,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                style: const TextStyle(color: AppColors.title),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _RefreshButton(
+              isLoading: viewModel.isProjectsRefreshing,
+              onPressed: viewModel.refreshProjects,
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         if (viewModel.projects.isEmpty)
-          const EmptyState(
+          EmptyState(
             icon: Icons.folder_open_outlined,
-            message: 'No projects yet — create your first one above.',
+            message: viewModel.projectSearchController.text.isNotEmpty
+                ? 'No projects match your search.'
+                : 'No projects yet — create your first one above.',
           )
         else
           ListView.builder(
@@ -540,6 +582,15 @@ class AdminDashboardPage extends StatelessWidget {
               );
             },
           ),
+        if (viewModel.projectPageCount > 1) ...[
+          const SizedBox(height: 16),
+          _PaginationBar(
+            page: viewModel.projectPage,
+            pageCount: viewModel.projectPageCount,
+            totalCount: viewModel.projectTotalCount,
+            onPageChanged: viewModel.setProjectPage,
+          ),
+        ],
       ],
     );
   }
@@ -900,6 +951,97 @@ class _AdminCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
+    );
+  }
+}
+
+/// Manual reload for the Projects tab — separate from the initial-load
+/// spinner so refreshing doesn't blank the whole tab, just shows a small
+/// in-place spinner on the button itself.
+class _RefreshButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _RefreshButton({required this.isLoading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        tooltip: 'Refresh',
+        onPressed: isLoading ? null : onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primary,
+                  ),
+                ),
+              )
+            : const Icon(Icons.refresh, color: AppColors.muted),
+      ),
+    );
+  }
+}
+
+class _PaginationBar extends StatelessWidget {
+  final int page;
+  final int pageCount;
+  final int totalCount;
+  final ValueChanged<int> onPageChanged;
+
+  const _PaginationBar({
+    required this.page,
+    required this.pageCount,
+    required this.totalCount,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '$totalCount project${totalCount == 1 ? '' : 's'} · '
+          'Page $page of $pageCount',
+          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+        ),
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'Previous page',
+              onPressed: page > 1 ? () => onPageChanged(page - 1) : null,
+              icon: Icon(
+                Icons.chevron_left,
+                color: page > 1 ? AppColors.title : AppColors.disabled,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Next page',
+              onPressed: page < pageCount
+                  ? () => onPageChanged(page + 1)
+                  : null,
+              icon: Icon(
+                Icons.chevron_right,
+                color: page < pageCount
+                    ? AppColors.title
+                    : AppColors.disabled,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
