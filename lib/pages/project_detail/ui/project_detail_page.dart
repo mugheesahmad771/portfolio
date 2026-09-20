@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:portfolio/core/constants/app_color.dart';
 import 'package:portfolio/core/constants/app_route.dart';
 import 'package:portfolio/core/constants/app_text_styles.dart';
-import 'package:portfolio/core/constants/breakpoints.dart';
 import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/pages/project_detail/viewmodel/project_detail_viewmodel.dart';
 import 'package:portfolio/views/app_badge.dart';
@@ -64,7 +63,6 @@ class ProjectDetailPage extends StatelessWidget {
         }
 
         final project = viewModel.project!;
-        final isDesktop = Breakpoints.isDesktop(context);
 
         return ResponsiveContainer(
           child: Column(
@@ -139,29 +137,20 @@ class ProjectDetailPage extends StatelessWidget {
                 id: 'project-cover-${project.id}',
                 child: _buildCoverOrMetrics(context, project),
               ),
+              const SizedBox(height: 32),
+              // Quick facts (tech/platforms/key features) as a row of cards
+              // that flows to however many columns actually fit, rather
+              // than a fixed-width sidebar pinned next to the main column.
+              // A permanent two-column split left a growing dead zone of
+              // empty space next to short sidebar content once the main
+              // column ran long (a project with a video and a full
+              // screenshot gallery easily runs 2-3x taller than three
+              // short cards) — this scales with content instead of
+              // against it, and needed no more IntrinsicHeight/LayoutBuilder
+              // interplay to get right.
+              _buildProjectInfoRow(context, project),
               const SizedBox(height: 40),
-              isDesktop
-                  ? IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 16,
-                            child: _buildMainColumn(context, project),
-                          ),
-                          const SizedBox(width: 40),
-                          Expanded(flex: 10, child: _buildSidebar(project)),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildMainColumn(context, project),
-                        const SizedBox(height: 32),
-                        _buildSidebar(project),
-                      ],
-                    ),
+              _buildMainColumn(context, project),
               const SizedBox(height: 48),
               if (viewModel.relatedProjects.isNotEmpty) ...[
                 const SectionHeader(
@@ -304,8 +293,7 @@ class ProjectDetailPage extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () =>
-            ImageLightbox.showSingle(context, project.coverImage!),
+        onTap: () => ImageLightbox.showSingle(context, project.coverImage!),
         child: cover,
       ),
     );
@@ -406,59 +394,66 @@ class ProjectDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildScreenshotGrid(context, project.screenshots, project.title),
+          _buildScreenshotGrid(
+            context,
+            project.screenshots,
+            project.title,
+            project.platforms,
+          ),
         ],
       ],
     );
   }
 
-
-  // Deliberately built from Wrap + fixed-size tiles instead of GridView:
-  // this section sits inside the desktop two-column split, which is
-  // wrapped in an IntrinsicHeight to match the sidebar's height — and
-  // IntrinsicHeight requires every descendant to support computing its own
-  // intrinsic size. GridView is Viewport-backed and can't (Viewports have
-  // no well-defined intrinsic size), which silently collapses the whole
-  // row to zero height instead of throwing. Wrap is a plain RenderBox and
-  // handles it correctly — same reason the related-projects grid below
-  // uses Wrap over GridView. Also can't use LayoutBuilder to measure the
-  // real available width for the same IntrinsicHeight reason, so the
-  // column width is approximated from the viewport — on desktop the main
-  // column only gets ~62% of it (flex 16 of 26) next to the sidebar.
+  // Wrap + fixed-size tiles (not GridView) purely so every tile keeps a
+  // consistent aspect ratio regardless of how many end up in the last row
+  // — LayoutBuilder is safe to use here for the real available width since
+  // nothing above this wraps it in an IntrinsicHeight.
   Widget _buildScreenshotGrid(
     BuildContext context,
     List<String> screenshots,
     String title,
+    List<String> projectPlatforms,
   ) {
-    final viewportWidth = MediaQuery.sizeOf(context).width;
-    final isDesktop = Breakpoints.isDesktop(context);
-    final columnWidth = isDesktop ? viewportWidth * 0.62 : viewportWidth;
-    final cols = columnWidth < 560 ? 1 : (columnWidth < 900 ? 2 : 3);
-    const spacing = 14.0;
-    final tileWidth = (columnWidth - spacing * (cols - 1)) / cols;
-    final tileHeight = tileWidth * 3 / 4;
-    return Wrap(
-      spacing: spacing,
-      runSpacing: spacing,
-      children: List.generate(screenshots.length, (i) {
-        return SizedBox(
-          width: tileWidth,
-          height: tileHeight,
-          child: FadeSlideIn(
-            tag: 'screenshot-fade-$title-$i',
-            // Cascades in row-by-row instead of one big simultaneous pop —
-            // capped so a 19-screenshot gallery doesn't leave the last
-            // tile waiting nearly a second to appear.
-            delay: Duration(milliseconds: 30 * (i % 12)),
-            child: ScreenshotThumb(
-              url: screenshots[i],
-              semanticLabel: '$title screenshot ${i + 1}',
-              gallery: screenshots,
-              index: i,
-            ),
-          ),
+    // A mobile-only project's screenshots are portrait phone captures —
+    // giving them a landscape-ish tile crops most of the screen away under
+    // BoxFit.contain's letterboxing. A tile shaped closer to a real phone
+    // screen keeps that letterboxing small instead.
+    final isMobileOnly =
+        projectPlatforms.isNotEmpty &&
+        projectPlatforms.every((p) => p == 'iOS' || p == 'Android');
+    final tileAspectRatio = isMobileOnly ? 9 / 16 : 4 / 3;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnWidth = constraints.maxWidth;
+        final cols = columnWidth < 560 ? 1 : (columnWidth < 900 ? 2 : 3);
+        const spacing = 14.0;
+        final tileWidth = (columnWidth - spacing * (cols - 1)) / cols;
+        final tileHeight = tileWidth / tileAspectRatio;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(screenshots.length, (i) {
+            return SizedBox(
+              width: tileWidth,
+              height: tileHeight,
+              child: FadeSlideIn(
+                tag: 'screenshot-fade-$title-$i',
+                // Cascades in row-by-row instead of one big simultaneous
+                // pop — capped so a 19-screenshot gallery doesn't leave
+                // the last tile waiting nearly a second to appear.
+                delay: Duration(milliseconds: 30 * (i % 12)),
+                child: ScreenshotThumb(
+                  url: screenshots[i],
+                  semanticLabel: '$title screenshot ${i + 1}',
+                  gallery: screenshots,
+                  index: i,
+                ),
+              ),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 
@@ -487,97 +482,118 @@ class ProjectDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSidebar(ProjectModel project) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sidebarCard(
-          'Technology',
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: project.technologies
-                .map((t) => TechChip(label: t, isSmall: true))
-                .toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
-        _sidebarCard(
-          'Platforms',
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: project.platforms
-                .map(
-                  (p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _platformIcon(p),
-                          size: 18,
-                          color: AppColors.muted,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          p,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.title,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-        if (project.keyFeatures.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          _sidebarCard(
-            'Key Features',
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: project.keyFeatures
-                  .map(
-                    (f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 6),
-                            child: SizedBox(
-                              width: 6,
-                              height: 6,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              f,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.body,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        ],
+  /// Tech/platform/feature "at a glance" cards as a row that flows to
+  /// however many columns actually fit (via [LayoutBuilder] — safe here
+  /// since, unlike the old sidebar, nothing above this wraps it in an
+  /// IntrinsicHeight), instead of a fixed-width sidebar pinned next to the
+  /// main column for the page's full height.
+  Widget _buildProjectInfoRow(BuildContext context, ProjectModel project) {
+    final cards = <Widget>[_technologyCard(project), _platformsCard(project)];
+    if (project.keyFeatures.isNotEmpty) {
+      cards.add(_keyFeaturesCard(project));
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cols = constraints.maxWidth < 640
+            ? 1
+            : (constraints.maxWidth < 980 ? 2 : cards.length);
+        const spacing = 20.0;
+        final cardWidth = (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: cards
+              .map((c) => SizedBox(width: cardWidth, child: c))
+              .toList(),
+        );
+      },
+    );
+  }
+
+  Widget _technologyCard(ProjectModel project) {
+    return _sidebarCard(
+      'Technology',
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: project.technologies
+            .map((t) => TechChip(label: t, isSmall: true))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _platformsCard(ProjectModel project) {
+    return _sidebarCard(
+      'Platforms',
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: project.platforms
+            .map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Icon(_platformIcon(p), size: 18, color: AppColors.muted),
+                    const SizedBox(width: 10),
+                    Text(
+                      p,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.title,
                       ),
                     ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
-      ],
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _keyFeaturesCard(ProjectModel project) {
+    return _sidebarCard(
+      'Key Features',
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: project.keyFeatures
+            .map(
+              (f) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: SizedBox(
+                        width: 6,
+                        height: 6,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        f,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.body,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 

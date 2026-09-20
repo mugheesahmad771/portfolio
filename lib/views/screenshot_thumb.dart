@@ -70,9 +70,15 @@ class _ScreenshotThumbState extends State<ScreenshotThumb> {
             child: Stack(
               fit: StackFit.expand,
               children: [
+                // A fixed-height tile can't match every screenshot's real
+                // aspect ratio — a portrait phone screenshot forced into a
+                // landscape-ish box under BoxFit.cover gets most of its
+                // content cropped off. contain never crops; the tile's
+                // background fills whatever letterboxing that leaves.
+                const ColoredBox(color: AppColors.section),
                 Image.network(
                   widget.url,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   semanticLabel: widget.semanticLabel,
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
@@ -92,16 +98,17 @@ class _ScreenshotThumbState extends State<ScreenshotThumb> {
                       ),
                     );
                   },
-                  errorBuilder: (context, error, stackTrace) => const ColoredBox(
-                    color: AppColors.section,
-                    child: Center(
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: AppColors.disabled,
-                        size: 24,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const ColoredBox(
+                        color: AppColors.section,
+                        child: Center(
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: AppColors.disabled,
+                            size: 24,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),

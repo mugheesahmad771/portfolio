@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/constants/app_color.dart';
-import 'package:portfolio/core/constants/breakpoints.dart';
 import 'package:portfolio/core/models/project_model.dart';
 import 'package:portfolio/views/fade_slide_in.dart';
 import 'package:portfolio/views/screenshot_thumb.dart';
@@ -146,49 +145,54 @@ class _AppScreenshotTabsState extends State<AppScreenshotTabs> {
             const SizedBox(height: 10),
             Text(
               'No screenshots yet for ${app.label}',
-              style: const TextStyle(
-                color: AppColors.disabled,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: AppColors.disabled, fontSize: 13),
             ),
           ],
         ),
       );
     }
 
-    // Same reasoning as the single-gallery grid this replaces for
-    // multi-app projects: a Wrap of fixed-size tiles rather than GridView,
-    // and MediaQuery rather than LayoutBuilder, because this sits inside
-    // the desktop two-column split's IntrinsicHeight, which can't contain
-    // a Viewport-backed widget or a LayoutBuilder.
-    final viewportWidth = MediaQuery.sizeOf(context).width;
-    final isDesktop = Breakpoints.isDesktop(context);
-    final columnWidth = isDesktop ? viewportWidth * 0.62 : viewportWidth;
-    final cols = columnWidth < 560 ? 1 : (columnWidth < 900 ? 2 : 3);
-    const spacing = 14.0;
-    final tileWidth = (columnWidth - spacing * (cols - 1)) / cols;
-    final tileHeight = tileWidth * 3 / 4;
+    // A phone app's screenshots are portrait captures — a landscape-ish
+    // tile crops most of the screen away under BoxFit.contain's
+    // letterboxing. A tile shaped closer to a real phone screen keeps that
+    // letterboxing small instead.
+    final isMobile = app.platform == 'iOS' || app.platform == 'Android';
+    final tileAspectRatio = isMobile ? 9 / 16 : 4 / 3;
 
-    return Wrap(
-      spacing: spacing,
-      runSpacing: spacing,
-      children: List.generate(app.screenshots.length, (i) {
-        return SizedBox(
-          width: tileWidth,
-          height: tileHeight,
-          child: FadeSlideIn(
-            tag:
-                'app-tab-screenshot-${widget.projectTitle}-${app.label}-${app.platform}-$i',
-            delay: Duration(milliseconds: 30 * (i % 12)),
-            child: ScreenshotThumb(
-              url: app.screenshots[i],
-              semanticLabel: '${app.label} ${app.platform} screenshot ${i + 1}',
-              gallery: app.screenshots,
-              index: i,
-            ),
-          ),
+    // Wrap + fixed-size tiles (not GridView) purely so every tile keeps a
+    // consistent aspect ratio regardless of how many end up in the last
+    // row.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnWidth = constraints.maxWidth;
+        final cols = columnWidth < 560 ? 1 : (columnWidth < 900 ? 2 : 3);
+        const spacing = 14.0;
+        final tileWidth = (columnWidth - spacing * (cols - 1)) / cols;
+        final tileHeight = tileWidth / tileAspectRatio;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(app.screenshots.length, (i) {
+            return SizedBox(
+              width: tileWidth,
+              height: tileHeight,
+              child: FadeSlideIn(
+                tag:
+                    'app-tab-screenshot-${widget.projectTitle}-${app.label}-${app.platform}-$i',
+                delay: Duration(milliseconds: 30 * (i % 12)),
+                child: ScreenshotThumb(
+                  url: app.screenshots[i],
+                  semanticLabel:
+                      '${app.label} ${app.platform} screenshot ${i + 1}',
+                  gallery: app.screenshots,
+                  index: i,
+                ),
+              ),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 }

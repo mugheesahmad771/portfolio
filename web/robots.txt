@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/
 
-Sitemap: https://mugheesahmad.dev/sitemap.xml
+Sitemap: https://portfolio.mugheesahmad771.workers.dev/sitemap.xml

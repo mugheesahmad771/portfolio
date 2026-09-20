@@ -1,37 +1,152 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://mugheesahmad.dev/</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/about</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/experience</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/experience</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/projects</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/skills</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/skills</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/resume</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/resume</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mugheesahmad.dev/contact</loc>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/charger-app</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/xomma</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/orninja</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/bella</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/fuel-me</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/trendza</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/agile-field-data</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/safa-study-abroad</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/dms-workforce-deployment</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/ussd-gateway-platform</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/preloved-marketplace</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/funeral-services-coordination</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/healthsphere</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/coursemia</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/code-reader-passkit</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/erpnext-wms-mobile</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/medical-management-system</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/pos-inventory-system</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/welook-studio-booking</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/salu-style-catalog</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/wallet2cash-atm-management</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/salam-kids-tv</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://portfolio.mugheesahmad771.workers.dev/projects/tro-equipment-inspection</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

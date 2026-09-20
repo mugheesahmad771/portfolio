@@ -8,8 +8,14 @@
   "observability": {
     "enabled": true
   },
+  "main": "worker/index.js",
   "assets": {
     "directory": "build/web",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Without this, Cloudflare serves a matching static file (e.g. "/" →
+    // index.html) directly and never invokes the Worker at all — which
+    // silently skipped bot detection entirely until this was added.
+    "run_worker_first": true
   }
 }
